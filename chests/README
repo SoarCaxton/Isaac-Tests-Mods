@@ -3,3 +3,5 @@
 控制台输入：
 lua ChestsToggle()
 可清除测试数据并切换测试对象
+
+可在chests_startingitems.lua中配置初始物品

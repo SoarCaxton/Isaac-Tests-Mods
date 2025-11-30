@@ -50,9 +50,28 @@ CHESTS:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
     end
 end)
 
+local StartingItems = require('chests_startingitems')
+function CHESTS:CheckStartingItems()
+    local player = Isaac.GetPlayer(0)
+    for _,item in pairs(StartingItems.Collectibles) do
+        local itemId, num = table.unpack(type(item) == 'table' and item or {item, 1})
+        while player:GetCollectibleNum(itemId) < num do
+            player:AddCollectible(itemId, Isaac.GetItemConfig():GetCollectible(itemId).InitCharge)
+        end
+    end
+    for _,item in pairs(StartingItems.Trinkets) do
+        local itemId, num = table.unpack(type(item) == 'table' and item or {item, 1})
+        while player:GetTrinketMultiplier(itemId) < num do
+            player:DropTrinket(player.Position+player.PositionOffset)
+            player:AddTrinket(itemId, true)
+            player:UseActiveItem(CollectibleType.COLLECTIBLE_SMELTER, 3339)
+        end
+    end
+end
 CHESTS:AddCallback(ModCallbacks.MC_POST_UPDATE, function(self)
     self:Load()
     local room = Game():GetRoom()
+    self:CheckStartingItems()
     for i=1,Loop do
         if self.LOCKED then
             Isaac.Spawn(EntityType.ENTITY_PICKUP,PickupVariant.PICKUP_LOCKEDCHEST,0,room:GetCenterPos(),Vector.Zero,nil)
