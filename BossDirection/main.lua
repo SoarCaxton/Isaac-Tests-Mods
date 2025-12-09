@@ -131,10 +131,7 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function(self)
         if total > 0 then
             for dir,str in ipairs(Direction) do
                 local count = data[v] and data[v][str] or 0
-                local percentage = count/total*100
-                local integerPart = math.floor(percentage)
-                local fractionalPart =math.floor((percentage - integerPart) * 100 + 0.5)
-                text = text..string.format("%s=%02d.%2d%% ", str, integerPart, fractionalPart)
+                text = text..string.format("%s=%5.2f%% ", str, count/total*100)
             end
             text = text.."| Total="..total
             local renderSize = 0.5
