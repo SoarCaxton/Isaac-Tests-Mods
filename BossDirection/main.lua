@@ -134,7 +134,7 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function(self)
                 local percentage = count/total*100
                 local integerPart = math.floor(percentage)
                 local fractionalPart =math.floor((percentage - integerPart) * 100 + 0.5)
-                text = text..string.format("%s=%02d.%02d%% ", str, integerPart, fractionalPart)
+                text = text..string.format("%s=%02d.%2d%% ", str, integerPart, fractionalPart)
             end
             text = text.."| Total="..total
             local renderSize = 0.5
