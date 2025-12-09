@@ -30,13 +30,7 @@ function mod:GetDistAndDirection2Boss()
     local bossIndex
     local rooms = level:GetRooms()
     if stage ~= LevelStage.STAGE7 then
-        for i=1,#rooms do
-            local roomDesc = rooms:Get(i-1)
-            if roomDesc.Data and roomDesc.Data.Type == RoomType.ROOM_BOSS and i-1 ~= level:GetLastBossRoomListIndex() then
-                bossIndex = roomDesc.SafeGridIndex
-                break
-            end
-        end
+        bossIndex = level:GetRooms():Get(level:GetLastBossRoomListIndex()).SafeGridIndex
     else    -- The Void
         for i=1,#rooms do
             local roomDesc = rooms:Get(i-1)
