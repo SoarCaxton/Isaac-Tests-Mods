@@ -155,16 +155,17 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function(self)
     local pos = Vector(30, 20)
     for k,v in ipairs(Stages) do
         local text = string.format("%3s: ", v)
-        local total = data[v] and data[v].Total or 0
+        data[v] = data[v] or {}
+        local total = data[v].Total or 0
         if total > 0 then
             if Input.IsMouseBtnPressed(Mouse.MOUSE_BUTTON_RIGHT) then
                 for dir,str in ipairs(Direction) do
-                    local count = data[v] and data[v][str] or 0
+                    local count = data[v].Directions and data[v].Directions[str] or 0
                     text = text..string.format("%s=%5.2f%% ", str, count*100/total)
                 end
             else
                 for _,dir in ipairs(DoorDirection) do
-                    local count = data[v].Doors[dir] or 0
+                    local count = data[v].Doors and data[v].Doors[dir] or 0
                     text = text..string.format("%s=%5.2f%% ", dir, count*100/total)
                 end
             end
