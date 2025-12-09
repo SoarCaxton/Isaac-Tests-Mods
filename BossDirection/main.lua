@@ -1,4 +1,5 @@
 local mod = RegisterMod("Boss Direction", 1)
+local GetRoomDistance = require("GetRoomDistance")
 local Direction = {
     --[[
         Direction Index
@@ -21,8 +22,8 @@ local Direction = {
     [7] = 'Down',       -- [67.5,112.5)°
     [8] = 'Down-Left',  -- [112.5,157.5)°
 }
-
-function mod:GetDirection()
+local DoorDirection = {'Left','Up','Right','Down'}
+function mod:GetDistAndDirection2Boss()
     local level = Game():GetLevel()
     local stage = level:GetStage()
     assert(stage~=LevelStage.STAGE4_3 and stage~=LevelStage.STAGE8)
@@ -45,6 +46,7 @@ function mod:GetDirection()
             end
         end
     end
+
     local x,y = bossIndex%13, bossIndex//13
     local dx,dy = x-6, y-6
     local vectorDegrees = Vector(dx, dy):GetAngleDegrees()+180
@@ -63,8 +65,26 @@ function mod:GetDirection()
         7       5
             6
     ]]
-    return Direction[directionIndex+1]
+    local direction = Direction[directionIndex+1]
+
+    local minDistance = math.huge
+    local currentRoomIndex = level:GetCurrentRoomIndex()
+    local bestDirs = {}
+    local Neighbor = {-1,-13,1,13}
+    for i=0,3 do
+        local dirStr = DoorDirection[i+1]
+        local dist = GetRoomDistance(currentRoomIndex+Neighbor[i+1], bossIndex)
+        if 0 < dist and dist < minDistance then
+            minDistance = dist
+            bestDirs = {[dirStr]=true}
+        elseif dist == minDistance then
+            bestDirs[dirStr] = true
+        end
+    end
+
+    return bestDirs, direction
 end
+
 
 local Stages = {
     '1','1a','1b','1c','1d',
@@ -109,9 +129,17 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function(self)
     local key = Stages[index]
     Isaac.ExecuteCommand("stage "..key)
     data[key] = data[key] or {}
-    local stageData,dir = data[key], self:GetDirection()
-    stageData[dir] = (stageData[dir] or 0) + 1
+    local stageData= data[key]
     stageData.Total = (stageData.Total or 0) + 1
+    stageData.Directions = stageData.Directions or {}
+    stageData.Doors = stageData.Doors or {}
+    
+    local bestDirs,dir = self:GetDistAndDirection2Boss()
+    stageData.Directions[dir] = (stageData.Directions[dir] or 0) + 1
+    for dirStr,_ in pairs(bestDirs) do
+        stageData.Doors[dirStr] = (stageData.Doors[dirStr] or 0) + 1
+    end
+
     index = index%#Stages + 1
     if index == 1 then
         Isaac.ExecuteCommand("restart")
@@ -124,14 +152,21 @@ mod:AddCallback(ModCallbacks.MC_POST_CURSE_EVAL, function(self, curses)
 end)
 
 mod:AddCallback(ModCallbacks.MC_POST_RENDER, function(self)
-    local pos = Vector(20, 20)
+    local pos = Vector(30, 20)
     for k,v in ipairs(Stages) do
         local text = string.format("%3s: ", v)
         local total = data[v] and data[v].Total or 0
         if total > 0 then
-            for dir,str in ipairs(Direction) do
-                local count = data[v] and data[v][str] or 0
-                text = text..string.format("%s=%5.2f%% ", str, count/total*100)
+            if Input.IsMouseBtnPressed(Mouse.MOUSE_BUTTON_RIGHT) then
+                for dir,str in ipairs(Direction) do
+                    local count = data[v] and data[v][str] or 0
+                    text = text..string.format("%s=%5.2f%% ", str, count*100/total)
+                end
+            else
+                for _,dir in ipairs(DoorDirection) do
+                    local count = data[v].Doors[dir] or 0
+                    text = text..string.format("%s=%5.2f%% ", dir, count*100/total)
+                end
             end
             text = text.."| Total="..total
             local renderSize = 0.5
