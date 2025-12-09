@@ -1,4 +1,4 @@
-local mod = RegisterMod("Boss Direction with Knife Piece", 1)
+local mod = RegisterMod("Boss Direction with Knife Piece 1", 1)
 local GetRoomDistance = require("GetRoomDistance")
 local Direction = {
     --[[
