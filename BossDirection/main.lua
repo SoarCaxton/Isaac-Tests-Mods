@@ -124,19 +124,21 @@ mod:AddCallback(ModCallbacks.MC_POST_CURSE_EVAL, function(self, curses)
 end)
 
 mod:AddCallback(ModCallbacks.MC_POST_RENDER, function(self)
-    local pos = Vector(Isaac.GetScreenWidth()/2, 20)
+    local pos = Vector(20, 20)
     for k,v in ipairs(Stages) do
-        local text = v..": "
+        local text = string.format("%3s: ", v)
         local total = data[v] and data[v].Total or 0
         if total > 0 then
             for dir,str in ipairs(Direction) do
                 local count = data[v] and data[v][str] or 0
-                text = text..string.format("%s=%.2f%% ", str, count/total*100)
+                local percentage = count/total*100
+                local integerPart = math.floor(percentage)
+                local fractionalPart =math.floor((percentage - integerPart) * 100 + 0.5)
+                text = text..string.format("%s=%02d.%02d%% ", str, integerPart, fractionalPart)
             end
             text = text.."| Total="..total
-            local textWidth = Isaac.GetTextWidth(text)
             local renderSize = 0.5
-            Isaac.RenderScaledText(text, pos.X - renderSize*textWidth/2, pos.Y, renderSize, renderSize, 1,1,1,1)
+            Isaac.RenderScaledText(text, pos.X, pos.Y, renderSize, renderSize, 1,1,1,1)
             pos.Y = pos.Y + 10 * renderSize
         end
     end
