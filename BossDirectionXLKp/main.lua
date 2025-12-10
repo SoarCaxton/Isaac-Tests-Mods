@@ -153,7 +153,7 @@ mod:AddCallback(ModCallbacks.MC_POST_CURSE_EVAL, function(self, curses)
 end)
 
 mod:AddCallback(ModCallbacks.MC_POST_RENDER, function(self)
-    local pos = Vector(30, 20)
+    local pos = Vector(15, 20)
     for k,v in ipairs(Stages) do
         local text = string.format("%3s: ", v)
         data[v] = data[v] or {}
