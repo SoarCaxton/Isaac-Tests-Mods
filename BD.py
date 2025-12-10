@@ -1,14 +1,14 @@
+import glob
+import os
 import json
 import pandas as pd
 import matplotlib.pyplot as plt
 import re
 import io
+import numpy as np
 from math import atan2, degrees
 
-# 读取 JSON 数据
-with open("save1.dat", "r", encoding="utf-8") as f:
-    data = json.load(f)
-
+# 常量
 door_keys = ["Left", "Up", "Right", "Down"]
 direction_keys = ["Left", "Up-Left", "Up", "Up-Right", "Right", "Down-Right", "Down", "Down-Left"]
 
@@ -22,75 +22,7 @@ def sort_key(exp_id):
     else:
         return (float("inf"), exp_id)
 
-sorted_ids = sorted(data.keys(), key=sort_key)
-
-# -------- 第一页：实验数据 --------
-rows = []
-for exp_id in sorted_ids:
-    exp = data[exp_id]
-    row = {"ID": exp_id}
-    for k in door_keys:
-        row[f"Door_{k}"] = exp["Doors"].get(k, 0)
-    row["Total"] = exp.get("Total", 0)
-    for k in direction_keys:
-        row[f"Dir_{k.replace('-', '_')}"] = exp["Directions"].get(k, 0)
-    rows.append(row)
-
-df_data = pd.DataFrame(rows)
-
-# -------- 第二页：概率统计 --------
-df_prob = df_data.copy()
-for k in door_keys:
-    df_prob[f"Door_{k}"] = df_data[f"Door_{k}"] / df_data["Total"]
-for k in direction_keys:
-    df_prob[f"Dir_{k.replace('-', '_')}"] = df_data[f"Dir_{k.replace('-', '_')}"] / df_data["Total"]
-
-# -------- 第三页：概率与平均值的偏差（单位：百分比），忽略为0的列计算平均值，并新增方差列（百分比单位） --------
-import numpy as np
-
-df_norm = pd.DataFrame()
-df_norm["ID"] = df_prob["ID"]
-
-# 门的平均概率（忽略为0的列）
-door_cols = [f"Door_{k}" for k in door_keys]
-# 将0替换为NaN以便在mean时跳过，skipna=True 默认会跳过 NaN
-door_probs_nonzero = df_prob[door_cols].replace(0, np.nan)
-door_mean = door_probs_nonzero.mean(axis=1, skipna=True).fillna(0)
-df_norm["Door_mean"] = door_mean
-
-# 计算门的偏差（%）和方差（%^2 -> 这里我们返回方差的单位为“(百分比)^2”，同时也提供方差的百分比单位（方差的平方根））
-# 先计算偏差（以百分比表示）
-for k in door_keys:
-    col = f"Door_{k}"
-    df_norm[f"{col}(%)"] = (df_prob[col] - df_norm["Door_mean"]) * 100
-
-# 计算门的方差：基于非零值，先把概率转换为百分比再计算方差（单位：(百分比)^2）
-door_var_pct2 = door_probs_nonzero.mul(100).var(axis=1, ddof=0, skipna=True).fillna(0)
-df_norm["Door_var(%^2)"] = door_var_pct2
-# 可选：同时给出标准差（百分比单位），便于理解
-df_norm["Door_std(%)"] = np.sqrt(df_norm["Door_var(%^2)"])
-
-# 方向的平均概率（忽略为0的列）
-dir_cols = [f"Dir_{k.replace('-', '_')}" for k in direction_keys]
-dir_probs_nonzero = df_prob[dir_cols].replace(0, np.nan)
-dir_mean = dir_probs_nonzero.mean(axis=1, skipna=True).fillna(0)
-df_norm["Dir_mean"] = dir_mean
-
-# 方向偏差（%）
-for k in direction_keys:
-    col = f"Dir_{k.replace('-', '_')}"
-    df_norm[f"{col}(%)"] = (df_prob[col] - df_norm["Dir_mean"]) * 100
-
-# 方向方差（以百分比的方差表示）
-dir_var_pct2 = dir_probs_nonzero.mul(100).var(axis=1, ddof=0, skipna=True).fillna(0)
-df_norm["Dir_var(%^2)"] = dir_var_pct2
-df_norm["Dir_std(%)"] = np.sqrt(df_norm["Dir_var(%^2)"])
-
-# 保持列顺序，便于写入 Excel
-ordered_cols = ["ID", "Door_mean"] + [f"Door_{k}(%)" for k in door_keys] + ["Door_var(%^2)", "Door_std(%)", "Dir_mean"] + [f"Dir_{k.replace('-', '_')}(%)" for k in direction_keys] + ["Dir_var(%^2)", "Dir_std(%)"]
-df_norm = df_norm[ordered_cols]
-
-# -------- 第四页：方向图 --------
+# 方向相关函数（绘图使用）
 def angle_cw(dx, dy):
     """计算顺时针角度：左 -180/180°，上 -90°，右 0°，下 +90°"""
     ang = degrees(atan2(dy, dx))   # 数学角度：右0，上90，左±180，下-90
@@ -170,7 +102,6 @@ def plot_grid(exp_id, probs):
     buf.seek(0)
     return buf
 
-# -------- 新增：绘制单个实验的五格门概率图（左上右下中） --------
 def plot_doors(exp_id, door_probs):
     """
     绘制一个实验的门概率图：左、上、右、下、中五格
@@ -208,64 +139,135 @@ def plot_doors(exp_id, door_probs):
     buf.seek(0)
     return buf
 
-# -------- 保存到 Excel --------
-with pd.ExcelWriter("experiment_results.xlsx", engine="xlsxwriter") as writer:
-    df_data.to_excel(writer, sheet_name="实验数据", index=False)
-    df_prob.to_excel(writer, sheet_name="概率统计", index=False)
-    df_norm.to_excel(writer, sheet_name="均值偏差(%)方差", index=False)
+# 批处理当前目录下所有 .dat 文件
+for dat_file in glob.glob("*.dat"):
+    base_name = os.path.splitext(os.path.basename(dat_file))[0]
+    out_file = f"{base_name}.xlsx"
 
-    workbook  = writer.book
+    # 读取 JSON 数据
+    with open(dat_file, "r", encoding="utf-8") as f:
+        data = json.load(f)
 
-    # 新增一页：门概率图（同编号数字的实验排在同一行）
-    worksheet_doors = workbook.add_worksheet("门概率图")
-    writer.sheets["门概率图"] = worksheet_doors
+    sorted_ids = sorted(data.keys(), key=sort_key)
 
-    # 按编号数字部分分组
-    groups = {}
+    # -------- 第一页：实验数据 --------
+    rows = []
     for exp_id in sorted_ids:
-        m = re.match(r"(\d+)", exp_id)
-        num = m.group(1) if m else exp_id
-        groups.setdefault(num, []).append(exp_id)
+        exp = data[exp_id]
+        row = {"ID": exp_id}
+        for k in door_keys:
+            row[f"Door_{k}"] = exp["Doors"].get(k, 0)
+        row["Total"] = exp.get("Total", 0)
+        for k in direction_keys:
+            row[f"Dir_{k.replace('-', '_')}"] = exp["Directions"].get(k, 0)
+        rows.append(row)
 
-    row_height_unit = 10   # 每组占用的行数
-    col_width_unit = 3     # 每个小图占用的列数
+    df_data = pd.DataFrame(rows)
 
-    group_index = 0
-    for num, exp_ids in groups.items():
-        r = group_index * row_height_unit
-        for j, exp_id in enumerate(exp_ids):
-            # 取该实验的门概率
-            door_probs = {k: df_prob.loc[df_prob["ID"]==exp_id, f"Door_{k}"].values[0] for k in door_keys}
-            door_probs_for_plot = {
-                "Left": door_probs["Left"],
-                "Up": door_probs["Up"],
-                "Right": door_probs["Right"],
-                "Down": door_probs["Down"]
-            }
-            buf = plot_doors(exp_id, door_probs_for_plot)
-            c = j * col_width_unit
-            worksheet_doors.insert_image(r, c, f"{exp_id}_doors.png", {"image_data": buf})
-        group_index += 1
+    # -------- 第二页：概率统计 --------
+    df_prob = df_data.copy()
+    for k in door_keys:
+        df_prob[f"Door_{k}"] = df_data[f"Door_{k}"] / df_data["Total"]
+    for k in direction_keys:
+        df_prob[f"Dir_{k.replace('-', '_')}"] = df_data[f"Dir_{k.replace('-', '_')}"] / df_data["Total"]
 
+    # -------- 第三页：概率与平均值的偏差（单位：百分比），忽略为0的列计算平均值，并新增方差列（百分比单位） --------
+    df_norm = pd.DataFrame()
+    df_norm["ID"] = df_prob["ID"]
 
-    # 原来的方向图页
-    worksheet_dirs = workbook.add_worksheet("方向图")
-    writer.sheets["方向图"] = worksheet_dirs
+    # 门的平均概率（忽略为0的列）
+    door_cols = [f"Door_{k}" for k in door_keys]
+    door_probs_nonzero = df_prob[door_cols].replace(0, np.nan)
+    door_mean = door_probs_nonzero.mean(axis=1, skipna=True).fillna(0)
+    df_norm["Door_mean"] = door_mean
 
-    groups = {}
-    for exp_id in sorted_ids:
-        num = re.match(r"(\d+)", exp_id).group(1)
-        groups.setdefault(num, []).append(exp_id)
+    # 门偏差（%）
+    for k in door_keys:
+        col = f"Door_{k}"
+        df_norm[f"{col}(%)"] = (df_prob[col] - df_norm["Door_mean"]) * 100
 
-    row_offset = 0
-    for num, exp_ids in groups.items():
-        col_offset = 0
-        for exp_id in exp_ids:
-            # 使用页2的概率数据
-            probs = {col: df_prob.loc[df_prob["ID"]==exp_id, col].values[0] for col in dir_cols}
-            buf = plot_grid(exp_id, probs)
-            worksheet_dirs.insert_image(row_offset, col_offset, exp_id+".png", {"image_data": buf})
-            col_offset += 5
-        row_offset += 18
+    # 门方差（以百分比的方差表示）
+    door_var_pct2 = door_probs_nonzero.mul(100).var(axis=1, ddof=0, skipna=True).fillna(0)
+    df_norm["Door_var(%^2)"] = door_var_pct2
+    df_norm["Door_std(%)"] = np.sqrt(df_norm["Door_var(%^2)"])
 
-print("Excel 文件已生成。")
+    # 方向的平均概率（忽略为0的列）
+    dir_cols = [f"Dir_{k.replace('-', '_')}" for k in direction_keys]
+    dir_probs_nonzero = df_prob[dir_cols].replace(0, np.nan)
+    dir_mean = dir_probs_nonzero.mean(axis=1, skipna=True).fillna(0)
+    df_norm["Dir_mean"] = dir_mean
+
+    # 方向偏差（%）
+    for k in direction_keys:
+        col = f"Dir_{k.replace('-', '_')}"
+        df_norm[f"{col}(%)"] = (df_prob[col] - df_norm["Dir_mean"]) * 100
+
+    # 方向方差（以百分比的方差表示）
+    dir_var_pct2 = dir_probs_nonzero.mul(100).var(axis=1, ddof=0, skipna=True).fillna(0)
+    df_norm["Dir_var(%^2)"] = dir_var_pct2
+    df_norm["Dir_std(%)"] = np.sqrt(df_norm["Dir_var(%^2)"])
+
+    # 保持列顺序，便于写入 Excel
+    ordered_cols = ["ID", "Door_mean"] + [f"Door_{k}(%)" for k in door_keys] + ["Door_var(%^2)", "Door_std(%)", "Dir_mean"] + [f"Dir_{k.replace('-', '_')}(%)" for k in direction_keys] + ["Dir_var(%^2)", "Dir_std(%)"]
+    df_norm = df_norm[ordered_cols]
+
+    # -------- 保存到 Excel --------
+    with pd.ExcelWriter(out_file, engine="xlsxwriter") as writer:
+        df_data.to_excel(writer, sheet_name="实验数据", index=False)
+        df_prob.to_excel(writer, sheet_name="概率统计", index=False)
+        df_norm.to_excel(writer, sheet_name="均值偏差(%)方差", index=False)
+
+        workbook  = writer.book
+
+        # 新增一页：门概率图（同编号数字的实验排在同一行）
+        worksheet_doors = workbook.add_worksheet("门概率图")
+        writer.sheets["门概率图"] = worksheet_doors
+
+        # 按编号数字部分分组
+        groups = {}
+        for exp_id in sorted_ids:
+            m = re.match(r"(\d+)", exp_id)
+            num = m.group(1) if m else exp_id
+            groups.setdefault(num, []).append(exp_id)
+
+        row_height_unit = 10   # 每组占用的行数
+        col_width_unit = 3     # 每个小图占用的列数
+
+        group_index = 0
+        for num, exp_ids in groups.items():
+            r = group_index * row_height_unit
+            for j, exp_id in enumerate(exp_ids):
+                # 取该实验的门概率
+                door_probs = {k: df_prob.loc[df_prob["ID"]==exp_id, f"Door_{k}"].values[0] for k in door_keys}
+                door_probs_for_plot = {
+                    "Left": door_probs["Left"],
+                    "Up": door_probs["Up"],
+                    "Right": door_probs["Right"],
+                    "Down": door_probs["Down"]
+                }
+                buf = plot_doors(exp_id, door_probs_for_plot)
+                c = j * col_width_unit
+                worksheet_doors.insert_image(r, c, f"{exp_id}_doors.png", {"image_data": buf})
+            group_index += 1
+
+        # 原来的方向图页
+        worksheet_dirs = workbook.add_worksheet("方向图")
+        writer.sheets["方向图"] = worksheet_dirs
+
+        groups = {}
+        for exp_id in sorted_ids:
+            num = re.match(r"(\d+)", exp_id).group(1)
+            groups.setdefault(num, []).append(exp_id)
+
+        row_offset = 0
+        for num, exp_ids in groups.items():
+            col_offset = 0
+            for exp_id in exp_ids:
+                # 使用页2的概率数据
+                probs = {col: df_prob.loc[df_prob["ID"]==exp_id, col].values[0] for col in dir_cols}
+                buf = plot_grid(exp_id, probs)
+                worksheet_dirs.insert_image(row_offset, col_offset, exp_id+".png", {"image_data": buf})
+                col_offset += 5
+            row_offset += 18
+
+    print(f"{out_file} 已生成.")
