@@ -7,7 +7,7 @@ import re
 import io
 import numpy as np
 from math import atan2, degrees, sqrt
-from scipy.stats import norm
+from scipy.stats import norm, binomtest
 
 # -----------------------
 # 常量与辅助函数
@@ -15,7 +15,6 @@ from scipy.stats import norm
 door_keys = ["Left", "Up", "Right", "Down"]
 direction_keys = ["Left", "Up-Left", "Up", "Up-Right", "Right", "Down-Right", "Down", "Down-Left"]
 
-# 排序函数：先数字，再字母
 def sort_key(exp_id):
     match = re.match(r"(\d+)([a-z]*)", exp_id)
     if match:
@@ -25,13 +24,14 @@ def sort_key(exp_id):
     else:
         return (float("inf"), exp_id)
 
-# 方向相关函数（绘图使用）
+# -----------------------
+# 绘图相关（保持原有功能）
+# -----------------------
 def angle_cw(dx, dy):
-    ang = degrees(atan2(dy, dx))   # 数学角度：右0，上90，左±180，下-90
-    return -ang                    # 转为顺时针
+    ang = degrees(atan2(dy, dx))
+    return -ang
 
 def get_direction(angle):
-    # 返回与脚本中一致的方向键名（注意下划线）
     if (-180 <= angle < -157.5) or (157.5 <= angle <= 180):
         return "Left"
     elif -157.5 <= angle < -112.5:
@@ -55,7 +55,6 @@ colors = {
     "Right":"cyan","Down_Right":"blue","Down":"purple","Down_Left":"pink"
 }
 
-# 顺时针标注位置（与表格顺序一致）
 label_pos = {
     "Left": (-5, 0),
     "Up_Left": (-4, 4),
@@ -67,9 +66,6 @@ label_pos = {
     "Down_Left": (-4, -4),
 }
 
-# -----------------------
-# 绘图函数
-# -----------------------
 def plot_grid(exp_id, probs):
     size = 13
     cx, cy = size // 2, size // 2
@@ -94,7 +90,6 @@ def plot_grid(exp_id, probs):
     ax.set_title(exp_id)
 
     for d, (x_off, y_off) in label_pos.items():
-        # df_prob 列名格式为 Dir_<Name with underscore>
         key = f"Dir_{d}"
         val = probs.get(key, None)
         if val is not None:
@@ -138,14 +133,12 @@ def plot_doors(exp_id, door_probs):
     return buf
 
 # -----------------------
-# 置信区间模块（Wilson + Bonferroni）
+# 统计函数：Wilson 区间与成对显著性比较（组内 Bonferroni）
 # -----------------------
 def get_z(alpha):
-    # alpha 是每个类别的显著性水平（双侧）
     return norm.ppf(1 - alpha/2)
 
 def wilson_interval(N, A, alpha):
-    # 返回 (lower, upper)
     z = get_z(alpha)
     if N == 0:
         return 0.0, 1.0
@@ -158,7 +151,6 @@ def wilson_interval(N, A, alpha):
     return max(0.0, lower), min(1.0, upper)
 
 def verify_confidence(N, counts, alpha):
-    # counts: dict label->count
     results = []
     for label, A in counts.items():
         p_hat = A / N if N > 0 else 0.0
@@ -175,10 +167,167 @@ def verify_confidence(N, counts, alpha):
         })
     return results
 
+def pairwise_significant_higher_group(counts, labels_in_group, overall_alpha=0.05):
+    """
+    在 labels_in_group 内做两两单侧比较（A>B），组内使用 Bonferroni 校正。
+    返回每条显著结论的字典列表，包含 p_value、计数与差值。
+    """
+    labels = [lab for lab in labels_in_group if lab in counts]
+    n = len(labels)
+    pairs = []
+    for i in range(n):
+        for j in range(i+1, n):
+            pairs.append((labels[i], labels[j]))
+    m_tests = len(pairs)
+    if m_tests == 0:
+        return []
+
+    alpha_per_test = overall_alpha / m_tests
+
+    conclusions = []
+    for a, b in pairs:
+        A = int(counts.get(a, 0))
+        B = int(counts.get(b, 0))
+        m = A + B
+        if m == 0:
+            continue
+        # 检验 A > B（单侧）
+        res_ab = binomtest(A, n=m, p=0.5, alternative='greater')
+        p_ab = res_ab.pvalue
+        if p_ab <= alpha_per_test:
+            pA = A / m
+            pB = B / m
+            conclusions.append({
+                "conclusion": f"{a}>{b}",
+                "p_value": float(p_ab),
+                "A_count": A,
+                "B_count": B,
+                "diff": round(pA - pB, 6)
+            })
+            continue
+        # 检验 B > A（单侧）
+        res_ba = binomtest(B, n=m, p=0.5, alternative='greater')
+        p_ba = res_ba.pvalue
+        if p_ba <= alpha_per_test:
+            pA = A / m
+            pB = B / m
+            conclusions.append({
+                "conclusion": f"{b}>{a}",
+                "p_value": float(p_ba),
+                "A_count": A,
+                "B_count": B,
+                "diff": round(pB - pA, 6)
+            })
+            continue
+    return conclusions
+
 # -----------------------
-# 与 df_prob 对应的方向列名列表（用于后续安全取值）
+# 与 df_prob 对应的方向列名列表
 # -----------------------
 dir_cols = [f"Dir_{k.replace('-', '_')}" for k in direction_keys]
+
+# -----------------------
+# 写入“计算公式说明”到 worksheet 的辅助函数（合并为一个大单元格）
+# -----------------------
+def write_formula_block_merged(worksheet, sheet_type, workbook, max_merge_cols=5):
+    """
+    在 worksheet 的开头写入一段多行文本，说明脚本中使用的所有公式与计算步骤。
+    将所有说明合并到一个大单元格（从 (0,0) 到 (start_row-1, max_merge_cols)）。
+    返回写入说明后数据应开始的起始行号（int）。
+    """
+    common_lines = [
+        "计算说明（本节列出脚本中用于计算与检验的公式与步骤，便于复现）：",
+        "",
+        "1) 概率估计",
+        "   - 观测计数 A_i 为某类别的观测次数，总试验次数为 N（或在两类比较中为 m = A + B）。",
+        "   - 类别的估计概率： p_hat = A / N （若只比较两类，则条件概率 p_hat = A / m）。",
+        "",
+        "2) Wilson 置信区间（用于单个类别概率的置信区间，双侧）",
+        "   - 给定显著性水平 alpha（双侧），先计算 z = Phi^{-1}(1 - alpha/2)。",
+        "   - 设 p_hat = A / N，",
+        "     denom = 1 + z^2 / N",
+        "     center = p_hat + z^2 / (2N)",
+        "     rad = z * sqrt( p_hat*(1-p_hat)/N + z^2/(4N^2) )",
+        "     下界 lower = (center - rad) / denom",
+        "     上界 upper = (center + rad) / denom",
+        "   - 区间被截断到 [0,1]。",
+        "",
+        "3) 两类显著性比较（用于判断 A > B）",
+        "   - 只看落在 A 或 B 的样本，令 m = A + B。",
+        "   - 在原假设 H0: p_A = p_B（条件下 p = 0.5）下，A ~ Binomial(m, 0.5)。",
+        "   - 使用精确二项检验（binomtest）做单侧检验：H1: p_A > 0.5（即 A 的概率大于 B）。",
+        "   - 得到单侧 p_value（脚本中称为原始 p_value）。",
+        "",
+        "4) 多重比较校正（组内 Bonferroni）",
+        "   - 在同一组（例如门组或某方向子组）内做所有两两比较，若组内共有 T 个两两比较，",
+        "     则每次检验的显著性阈值设为 alpha_per_test = overall_alpha / T（overall_alpha 默认为 0.05）。",
+        "   - 仅当单侧 p_value <= alpha_per_test 时，记录显著结论 A>B（或 B>A）。",
+        "",
+        "5) 差值与效应量",
+        "   - 在两类比较中，观测差值定义为 diff = pA - pB，其中 pA = A / m, pB = B / m。",
+        "   - diff 用于衡量实际效应大小；p_value 用于衡量统计显著性，两者需结合解读。",
+        "",
+        "6) 方向比较限制（脚本实现细节）",
+        "   - 方向分为两组：直角组 = {Left, Up, Right, Down}；斜角组 = {Up-Left, Up-Right, Down-Right, Down-Left}。",
+        "   - 仅在组内做两两比较，不跨组比较。",
+        "",
+        "7) 概率统计表（概率统计页）",
+        "   - 每个类别的概率由原始计数除以 Total 得到：Door_X = Door_X_count / Total；Dir_Y = Dir_Y_count / Total。",
+        "",
+        "8) 均值/方差/标准差（均值偏差页）",
+        "   - 组内均值（例如门组）: mean = mean(p_i)（忽略为 0 的项以避免 Total=0 的影响）。",
+        "   - 以百分比形式计算偏差列： (p_i - mean) * 100。",
+        "   - 方差（%^2）使用样本方差（ddof=0），标准差为方差的平方根（%）。",
+        "",
+        "注：脚本中所有概率与检验均基于观测计数，若 Total=0 或 A+B=0 的情况会被跳过或以 0 处理。",
+        ""
+    ]
+
+    if sheet_type == "ci":
+        extra = [
+            "本页（置信区间验证）中特别说明：",
+            " - Doors 使用的 alpha = 0.05 / 4（Bonferroni 分配用于单个类别的 Wilson 区间计算）。",
+            " - Directions 使用的 alpha = 0.05 / 8（Bonferroni 分配用于单个方向的 Wilson 区间计算）。",
+            ""
+        ]
+    elif sheet_type == "doors_summary":
+        extra = [
+            "本页（结论-门）说明：",
+            " - 对每个实验，门组内共有 4 个类别，共 T = C(4,2) = 6 个两两比较。",
+            " - 使用 overall_alpha = 0.05，组内 Bonferroni 校正后 alpha_per_test = 0.05 / 6 ≈ 0.008333。",
+            " - 每条结论为单侧精确二项检验显著的比较，格式： 实验编号 | 结论 | p_value | A_count | B_count | 差值(pA-pB)。",
+            ""
+        ]
+    elif sheet_type == "dirs_summary":
+        extra = [
+            "本页（结论-方向）说明：",
+            " - 方向被分为两组：直角组（4 个）与斜角组（4 个），每组内分别做两两比较。",
+            " - 每组内比较数量均为 T = C(4,2) = 6，组内 Bonferroni 校正 alpha_per_test = 0.05 / 6。",
+            " - 仅在组内记录显著结论，格式同上： 实验编号 | 结论 | p_value | A_count | B_count | 差值(pA-pB)。",
+            ""
+        ]
+    else:
+        extra = []
+
+    lines = common_lines + extra
+    text = "\n".join(lines)
+
+    # 合并单元格范围：从 (0,0) 到 (start_row-1, max_merge_cols)
+    start_row = len(lines) + 3  # 说明占用行数 + 2 空行
+    end_row = start_row - 1
+    # ensure at least one column to merge
+    last_col = max_merge_cols
+
+    # 格式：自动换行、顶端对齐
+    merged_fmt = workbook.add_format({'text_wrap': True, 'valign': 'top'})
+    # 合并并写入文本
+    worksheet.merge_range(0, 0, end_row, last_col, text, merged_fmt)
+    # 调整列宽与行高以便显示（可根据需要微调）
+    worksheet.set_column(0, last_col, 40)  # 宽度
+    for r in range(0, end_row + 1):
+        worksheet.set_row(r, 18)  # 行高，自动换行时可增大
+
+    return start_row
 
 # -----------------------
 # 主处理流程：批处理当前目录下所有 .dat 文件
@@ -213,14 +362,12 @@ for dat_file in glob.glob("*.dat"):
         df_prob[f"Door_{k}"] = df_data[f"Door_{k}"] / totals
     for k in direction_keys:
         df_prob[f"Dir_{k.replace('-', '_')}"] = df_data[f"Dir_{k.replace('-', '_')}"] / totals
-    # 将 NaN 填为 0（例如 Total 为0 的行）
     df_prob[[f"Door_{k}" for k in door_keys] + dir_cols] = df_prob[[f"Door_{k}" for k in door_keys] + dir_cols].fillna(0)
 
-    # -------- 第三页：方向与门的统计（分组均值/方差/标准差） --------
+    # -------- 第三页：均值偏差方差（保持原逻辑） --------
     df_norm = pd.DataFrame()
     df_norm["ID"] = df_prob["ID"]
 
-    # 门的统计（忽略为0的列）
     door_cols = [f"Door_{k}" for k in door_keys]
     door_probs_nonzero = df_prob[door_cols].replace(0, np.nan)
     df_norm["Door_mean"] = door_probs_nonzero.mean(axis=1, skipna=True).fillna(0)
@@ -230,7 +377,6 @@ for dat_file in glob.glob("*.dat"):
     df_norm["Door_var(%^2)"] = door_probs_nonzero.mul(100).var(axis=1, ddof=0, skipna=True).fillna(0)
     df_norm["Door_std(%)"] = np.sqrt(df_norm["Door_var(%^2)"])
 
-    # 直角方向（Left, Up, Right, Down）
     dir_straight = [f"Dir_{k.replace('-', '_')}" for k in ["Left","Up","Right","Down"]]
     dir_straight_nonzero = df_prob[dir_straight].replace(0, np.nan)
     df_norm["Dir_straight_mean"] = dir_straight_nonzero.mean(axis=1, skipna=True).fillna(0)
@@ -239,7 +385,6 @@ for dat_file in glob.glob("*.dat"):
     df_norm["Dir_straight_var(%^2)"] = dir_straight_nonzero.mul(100).var(axis=1, ddof=0, skipna=True).fillna(0)
     df_norm["Dir_straight_std(%)"] = np.sqrt(df_norm["Dir_straight_var(%^2)"])
 
-    # 斜角方向（Up-Left, Up-Right, Down-Right, Down-Left）
     diag_keys = ["Up-Left","Up-Right","Down-Right","Down-Left"]
     dir_diagonal = [f"Dir_{k.replace('-', '_')}" for k in diag_keys]
     dir_diagonal_nonzero = df_prob[dir_diagonal].replace(0, np.nan)
@@ -248,10 +393,8 @@ for dat_file in glob.glob("*.dat"):
         df_norm[f"{col}(%)"] = (df_prob[col] - df_norm["Dir_diagonal_mean"]) * 100
     df_norm["Dir_diagonal_var(%^2)"] = dir_diagonal_nonzero.mul(100).var(axis=1, ddof=0, skipna=True).fillna(0)
     df_norm["Dir_diagonal_std(%)"] = np.sqrt(df_norm["Dir_diagonal_var(%^2)"])
-    # 新增列：组合标准差 = sqrt(直角方向方差 + 斜角方向方差)
     df_norm["Dir_combined_std(%)"] = np.sqrt(df_norm["Dir_straight_var(%^2)"] + df_norm["Dir_diagonal_var(%^2)"])
 
-    # 保持列顺序（存在性检查以防极端情况）
     ordered_cols = (
         ["ID", "Door_mean"]
         + [f"Door_{k}(%)" for k in door_keys]
@@ -274,25 +417,19 @@ for dat_file in glob.glob("*.dat"):
         df_norm.to_excel(writer, sheet_name="均值偏差(%)方差", index=False)
 
         workbook = writer.book
-
-        # 获取第三页 worksheet
         worksheet_norm = writer.sheets["均值偏差(%)方差"]
 
-        # 定义高亮格式（可按需修改颜色）
-        mean_fmt = workbook.add_format({'bg_color': '#FFF2CC'})   # 浅黄
-        var_fmt  = workbook.add_format({'bg_color': '#FCE4D6'})   # 浅橙
-        std_fmt  = workbook.add_format({'bg_color': '#E2EFDA'})   # 浅绿
+        mean_fmt = workbook.add_format({'bg_color': '#FFF2CC'})
+        var_fmt  = workbook.add_format({'bg_color': '#FCE4D6'})
+        std_fmt  = workbook.add_format({'bg_color': '#E2EFDA'})
 
-        # 要高亮的列名集合（尽量与 df_norm 列名一致）
         highlight_means = [c for c in ["Door_mean", "Dir_straight_mean", "Dir_diagonal_mean"] if c in df_norm.columns]
         highlight_vars  = [c for c in ["Door_var(%^2)", "Dir_straight_var(%^2)", "Dir_diagonal_var(%^2)"] if c in df_norm.columns]
         highlight_stds  = [c for c in ["Door_std(%)", "Dir_straight_std(%)", "Dir_diagonal_std(%)", "Dir_combined_std(%)"] if c in df_norm.columns]
 
-        # 还可以把单项偏差列也高亮为同一色系（可选）
         item_diff_fmt = workbook.add_format({'bg_color': '#D9EAF7'})
         item_diff_cols = [c for c in df_norm.columns if c.endswith("(%)") and c not in highlight_stds]
 
-        # 应用格式：按列索引设置
         for col_name in highlight_means:
             col_idx = df_norm.columns.get_loc(col_name)
             worksheet_norm.set_column(col_idx, col_idx, None, mean_fmt)
@@ -306,7 +443,7 @@ for dat_file in glob.glob("*.dat"):
             col_idx = df_norm.columns.get_loc(col_name)
             worksheet_norm.set_column(col_idx, col_idx, None, item_diff_fmt)
 
-        # -------- 新增一页：门概率图（同编号数字的实验排在同一行） --------
+        # -------- 门概率图页 --------
         worksheet_doors = workbook.add_worksheet("门概率图")
         writer.sheets["门概率图"] = worksheet_doors
 
@@ -362,23 +499,23 @@ for dat_file in glob.glob("*.dat"):
                 col_offset += 5
             row_offset += 18
 
-        # -------- 新增一页：置信区间验证（Wilson + Bonferroni） --------
+        # -------- 置信区间验证页（在开头合并单元格写入公式说明） --------
         worksheet_ci = workbook.add_worksheet("置信区间验证")
         writer.sheets["置信区间验证"] = worksheet_ci
 
-        # 写表头样式
+        start_row_ci = write_formula_block_merged(worksheet_ci, sheet_type="ci", workbook=workbook, max_merge_cols=5)
+
         header_fmt = workbook.add_format({'bold': True, 'bg_color': '#DCE6F1'})
         small_col_width = 12
         worksheet_ci.set_column(0, 0, 18)
         worksheet_ci.set_column(1, 1, small_col_width)
         worksheet_ci.set_column(2, 6, 14)
 
-        row_offset = 0
+        row_offset = start_row_ci
         for exp_id in sorted_ids:
             exp = data[exp_id]
             N = exp.get("Total", 0)
 
-            # Doors (Bonferroni α = 0.05/4)
             alpha_doors = 0.05 / 4
             door_counts = {k: exp["Doors"].get(k, 0) for k in door_keys}
             door_results = verify_confidence(N, door_counts, alpha_doors)
@@ -394,7 +531,6 @@ for dat_file in glob.glob("*.dat"):
 
             row_offset += 1
 
-            # Directions (Bonferroni α = 0.05/8)
             alpha_dirs = 0.05 / 8
             dir_counts = {k: exp["Directions"].get(k, 0) for k in direction_keys}
             dir_results = verify_confidence(N, dir_counts, alpha_dirs)
@@ -407,6 +543,74 @@ for dat_file in glob.glob("*.dat"):
                 worksheet_ci.write_row(row_offset, 0, [r[h] for h in headers])
                 row_offset += 1
 
-            row_offset += 2  # 空行分隔
+            row_offset += 2
+
+        # -------- 结论页（门与方向），在开头合并单元格写入公式说明，然后每条结论一行 --------
+        worksheet_summary_doors = workbook.add_worksheet("结论-门")
+        writer.sheets["结论-门"] = worksheet_summary_doors
+        worksheet_summary_dirs = workbook.add_worksheet("结论-方向")
+        writer.sheets["结论-方向"] = worksheet_summary_dirs
+
+        start_row_doors = write_formula_block_merged(worksheet_summary_doors, sheet_type="doors_summary", workbook=workbook, max_merge_cols=5)
+        start_row_dirs = write_formula_block_merged(worksheet_summary_dirs, sheet_type="dirs_summary", workbook=workbook, max_merge_cols=5)
+
+        header_row = ["实验编号", "结论", "p_value", "A_count", "B_count", "差值(pA-pB)"]
+        worksheet_summary_doors.set_column(0, 0, 14)
+        worksheet_summary_doors.set_column(1, 1, 18)
+        worksheet_summary_doors.set_column(2, 5, 12)
+        worksheet_summary_dirs.set_column(0, 0, 14)
+        worksheet_summary_dirs.set_column(1, 1, 18)
+        worksheet_summary_dirs.set_column(2, 5, 12)
+
+        worksheet_summary_doors.write_row(start_row_doors, 0, header_row, header_fmt)
+        worksheet_summary_dirs.write_row(start_row_dirs, 0, header_row, header_fmt)
+
+        row_d = start_row_doors + 1
+        row_dir = start_row_dirs + 1
+        for exp_id in sorted_ids:
+            exp = data[exp_id]
+
+            # ---- 门组比较（组内 Bonferroni） ----
+            door_counts = {k: exp["Doors"].get(k, 0) for k in door_keys}
+            door_conclusions = pairwise_significant_higher_group(door_counts, door_keys, overall_alpha=0.05)
+            for item in door_conclusions:
+                worksheet_summary_doors.write_row(row_d, 0, [
+                    exp_id,
+                    item["conclusion"],
+                    item["p_value"],
+                    item["A_count"],
+                    item["B_count"],
+                    item["diff"]
+                ])
+                row_d += 1
+
+            # ---- 方向组比较：直角组与斜角组分别比较 ----
+            dir_counts = {k: exp["Directions"].get(k, 0) for k in direction_keys}
+
+            straight_labels = ["Left", "Up", "Right", "Down"]
+            straight_conclusions = pairwise_significant_higher_group(dir_counts, straight_labels, overall_alpha=0.05)
+            for item in straight_conclusions:
+                worksheet_summary_dirs.write_row(row_dir, 0, [
+                    exp_id,
+                    item["conclusion"],
+                    item["p_value"],
+                    item["A_count"],
+                    item["B_count"],
+                    item["diff"]
+                ])
+                row_dir += 1
+
+            diagonal_labels = ["Up-Left", "Up-Right", "Down-Right", "Down-Left"]
+            diagonal_conclusions = pairwise_significant_higher_group(dir_counts, diagonal_labels, overall_alpha=0.05)
+            for item in diagonal_conclusions:
+                worksheet_summary_dirs.write_row(row_dir, 0, [
+                    exp_id,
+                    item["conclusion"],
+                    item["p_value"],
+                    item["A_count"],
+                    item["B_count"],
+                    item["diff"]
+                ])
+                row_dir += 1
 
     print(f"{out_file} 已生成.")
