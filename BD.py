@@ -199,25 +199,26 @@ def pairwise_significant_higher_group(counts, labels_in_group, overall_alpha=0.0
         res_ab = binomtest(A, n=m, p=0.5, alternative='greater')
         p_ab = res_ab.pvalue
         if p_ab <= alpha_per_test:
+            # A 显著大于 B
             conclusions.append({
                 "conclusion": f"{a}>{b}",
                 "p_value": float(p_ab),
-                "A_count": A,
-                "B_count": B,
-                "diff_conditional": round(2 * p_hat - 1, 6)  # 条件差值 = pA - pB = 2*p_hat -1
+                "A_count": A,   # A 是结论左边的类
+                "B_count": B,   # B 是结论右边的类
+                "diff_conditional": round((A/m) - (B/m), 6)
             })
             continue
         # 检验 B > A（单侧）
         res_ba = binomtest(B, n=m, p=0.5, alternative='greater')
         p_ba = res_ba.pvalue
         if p_ba <= alpha_per_test:
-            p_hat_b = B / m if m > 0 else 0.0
+            # B 显著大于 A —— 注意这里要交换 A/B 的角色
             conclusions.append({
                 "conclusion": f"{b}>{a}",
                 "p_value": float(p_ba),
-                "A_count": A,
-                "B_count": B,
-                "diff_conditional": round(2 * p_hat_b - 1, 6)  # pB - pA
+                "A_count": B,   # B 是结论左边的类
+                "B_count": A,   # A 是结论右边的类
+                "diff_conditional": round((B/m) - (A/m), 6)
             })
             continue
     return conclusions
