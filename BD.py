@@ -7,7 +7,7 @@ import re
 import io
 import numpy as np
 from math import atan2, degrees, sqrt
-from scipy.stats import norm, binomtest
+from scipy.stats import norm, binomtest, binom
 
 # -----------------------
 # 常量与辅助函数
@@ -170,7 +170,8 @@ def verify_confidence(N, counts, alpha):
 def pairwise_significant_higher_group(counts, labels_in_group, overall_alpha=0.05):
     """
     在 labels_in_group 内做两两单侧比较（A>B），组内使用 Bonferroni 校正。
-    返回每条显著结论的字典列表，包含 p_value、计数与差值。
+    返回每条显著结论的字典列表，包含 p_value、计数、以及条件差值（基于 A/(A+B)）。
+    注意：最终导出时差值将以 N 为分母重新计算并显示。
     """
     labels = [lab for lab in labels_in_group if lab in counts]
     n = len(labels)
@@ -191,32 +192,32 @@ def pairwise_significant_higher_group(counts, labels_in_group, overall_alpha=0.0
         m = A + B
         if m == 0:
             continue
+        # 条件下的观测概率估计（用于检验）
+        p_hat = A / m if m > 0 else 0.0
+
         # 检验 A > B（单侧）
         res_ab = binomtest(A, n=m, p=0.5, alternative='greater')
         p_ab = res_ab.pvalue
         if p_ab <= alpha_per_test:
-            pA = A / m
-            pB = B / m
             conclusions.append({
                 "conclusion": f"{a}>{b}",
                 "p_value": float(p_ab),
                 "A_count": A,
                 "B_count": B,
-                "diff": round(pA - pB, 6)
+                "diff_conditional": round(2 * p_hat - 1, 6)  # 条件差值 = pA - pB = 2*p_hat -1
             })
             continue
         # 检验 B > A（单侧）
         res_ba = binomtest(B, n=m, p=0.5, alternative='greater')
         p_ba = res_ba.pvalue
         if p_ba <= alpha_per_test:
-            pA = A / m
-            pB = B / m
+            p_hat_b = B / m if m > 0 else 0.0
             conclusions.append({
                 "conclusion": f"{b}>{a}",
                 "p_value": float(p_ba),
                 "A_count": A,
                 "B_count": B,
-                "diff": round(pB - pA, 6)
+                "diff_conditional": round(2 * p_hat_b - 1, 6)  # pB - pA
             })
             continue
     return conclusions
@@ -255,7 +256,7 @@ def write_formula_block_merged(worksheet, sheet_type, workbook, max_merge_cols=5
         "3) 两类显著性比较（用于判断 A > B）",
         "   - 只看落在 A 或 B 的样本，令 m = A + B。",
         "   - 在原假设 H0: p_A = p_B（条件下 p = 0.5）下，A ~ Binomial(m, 0.5)。",
-        "   - 使用精确二项检验（binomtest）做单侧检验：H1: p_A > 0.5（即 A 的概率大于 B）。",
+        "   - 使用精确二项检验（binomtest）做单侧检验：H1: p_A > 0.5（即 A 的条件概率大于 B）。",
         "   - 得到单侧 p_value（脚本中称为原始 p_value）。",
         "",
         "4) 多重比较校正（组内 Bonferroni）",
@@ -263,9 +264,12 @@ def write_formula_block_merged(worksheet, sheet_type, workbook, max_merge_cols=5
         "     则每次检验的显著性阈值设为 alpha_per_test = overall_alpha / T（overall_alpha 默认为 0.05）。",
         "   - 仅当单侧 p_value <= alpha_per_test 时，记录显著结论 A>B（或 B>A）。",
         "",
-        "5) 差值与效应量",
-        "   - 在两类比较中，观测差值定义为 diff = pA - pB，其中 pA = A / m, pB = B / m。",
-        "   - diff 用于衡量实际效应大小；p_value 用于衡量统计显著性，两者需结合解读。",
+        "5) 差值与效应量（使用总样本 N 作为分母）",
+        "   - 在两类比较中，差值定义为：",
+        "       diff_total = (A/N) - (B/N)，其中 N 为总样本量。",
+        "   - 这样差值直接反映在总样本中的概率差异，便于与“误差 ≤1%（按 N 分母）”规则对齐。",
+        "   - 在结论页中，差值单元格按以下规则着色：",
+        "       <1% → 灰色；1%~2% → 黄色；≥2% → 绿色。",
         "",
         "6) 方向比较限制（脚本实现细节）",
         "   - 方向分为两组：直角组 = {Left, Up, Right, Down}；斜角组 = {Up-Left, Up-Right, Down-Right, Down-Left}。",
@@ -278,8 +282,6 @@ def write_formula_block_merged(worksheet, sheet_type, workbook, max_merge_cols=5
         "   - 组内均值（例如门组）: mean = mean(p_i)（忽略为 0 的项以避免 Total=0 的影响）。",
         "   - 以百分比形式计算偏差列： (p_i - mean) * 100。",
         "   - 方差（%^2）使用样本方差（ddof=0），标准差为方差的平方根（%）。",
-        "",
-        "注：脚本中所有概率与检验均基于观测计数，若 Total=0 或 A+B=0 的情况会被跳过或以 0 处理。",
         ""
     ]
 
@@ -295,7 +297,7 @@ def write_formula_block_merged(worksheet, sheet_type, workbook, max_merge_cols=5
             "本页（结论-门）说明：",
             " - 对每个实验，门组内共有 4 个类别，共 T = C(4,2) = 6 个两两比较。",
             " - 使用 overall_alpha = 0.05，组内 Bonferroni 校正后 alpha_per_test = 0.05 / 6 ≈ 0.008333。",
-            " - 每条结论为单侧精确二项检验显著的比较，格式： 实验编号 | 结论 | p_value | A_count | B_count | 差值(pA-pB)。",
+            " - 每条结论为单侧精确二项检验显著的比较，格式： 实验编号 | 结论 | p_value | A_count | B_count | 差值(pA-pB, N分母)。",
             ""
         ]
     elif sheet_type == "dirs_summary":
@@ -303,7 +305,7 @@ def write_formula_block_merged(worksheet, sheet_type, workbook, max_merge_cols=5
             "本页（结论-方向）说明：",
             " - 方向被分为两组：直角组（4 个）与斜角组（4 个），每组内分别做两两比较。",
             " - 每组内比较数量均为 T = C(4,2) = 6，组内 Bonferroni 校正 alpha_per_test = 0.05 / 6。",
-            " - 仅在组内记录显著结论，格式同上： 实验编号 | 结论 | p_value | A_count | B_count | 差值(pA-pB)。",
+            " - 仅在组内记录显著结论，格式同上： 实验编号 | 结论 | p_value | A_count | B_count | 差值(pA-pB, N分母)。",
             ""
         ]
     else:
@@ -312,20 +314,16 @@ def write_formula_block_merged(worksheet, sheet_type, workbook, max_merge_cols=5
     lines = common_lines + extra
     text = "\n".join(lines)
 
-    # 合并单元格范围：从 (0,0) 到 (start_row-1, max_merge_cols)
+    # 合并单元格范围：从 (0,0) 到 (end_row, last_col)
     start_row = len(lines) + 3  # 说明占用行数 + 2 空行
     end_row = start_row - 1
-    # ensure at least one column to merge
     last_col = max_merge_cols
 
-    # 格式：自动换行、顶端对齐
     merged_fmt = workbook.add_format({'text_wrap': True, 'valign': 'top'})
-    # 合并并写入文本
     worksheet.merge_range(0, 0, end_row, last_col, text, merged_fmt)
-    # 调整列宽与行高以便显示（可根据需要微调）
-    worksheet.set_column(0, last_col, 40)  # 宽度
+    worksheet.set_column(0, last_col, 40)
     for r in range(0, end_row + 1):
-        worksheet.set_row(r, 18)  # 行高，自动换行时可增大
+        worksheet.set_row(r, 18)
 
     return start_row
 
@@ -554,7 +552,7 @@ for dat_file in glob.glob("*.dat"):
         start_row_doors = write_formula_block_merged(worksheet_summary_doors, sheet_type="doors_summary", workbook=workbook, max_merge_cols=5)
         start_row_dirs = write_formula_block_merged(worksheet_summary_dirs, sheet_type="dirs_summary", workbook=workbook, max_merge_cols=5)
 
-        header_row = ["实验编号", "结论", "p_value", "A_count", "B_count", "差值(pA-pB)"]
+        header_row = ["实验编号", "结论", "p_value", "A_count", "B_count", "差值(pA-pB, N分母)"]
         worksheet_summary_doors.set_column(0, 0, 14)
         worksheet_summary_doors.set_column(1, 1, 18)
         worksheet_summary_doors.set_column(2, 5, 12)
@@ -569,18 +567,22 @@ for dat_file in glob.glob("*.dat"):
         row_dir = start_row_dirs + 1
         for exp_id in sorted_ids:
             exp = data[exp_id]
+            N = exp.get("Total", 0)
 
             # ---- 门组比较（组内 Bonferroni） ----
             door_counts = {k: exp["Doors"].get(k, 0) for k in door_keys}
             door_conclusions = pairwise_significant_higher_group(door_counts, door_keys, overall_alpha=0.05)
             for item in door_conclusions:
+                A = item["A_count"]
+                B = item["B_count"]
+                diff_total = (A / N - B / N) if N > 0 else 0.0
                 worksheet_summary_doors.write_row(row_d, 0, [
                     exp_id,
                     item["conclusion"],
                     item["p_value"],
                     item["A_count"],
                     item["B_count"],
-                    item["diff"]
+                    round(diff_total, 6)
                 ])
                 row_d += 1
 
@@ -590,27 +592,60 @@ for dat_file in glob.glob("*.dat"):
             straight_labels = ["Left", "Up", "Right", "Down"]
             straight_conclusions = pairwise_significant_higher_group(dir_counts, straight_labels, overall_alpha=0.05)
             for item in straight_conclusions:
+                A = item["A_count"]
+                B = item["B_count"]
+                diff_total = (A / N - B / N) if N > 0 else 0.0
                 worksheet_summary_dirs.write_row(row_dir, 0, [
                     exp_id,
                     item["conclusion"],
                     item["p_value"],
                     item["A_count"],
                     item["B_count"],
-                    item["diff"]
+                    round(diff_total, 6)
                 ])
                 row_dir += 1
 
             diagonal_labels = ["Up-Left", "Up-Right", "Down-Right", "Down-Left"]
             diagonal_conclusions = pairwise_significant_higher_group(dir_counts, diagonal_labels, overall_alpha=0.05)
             for item in diagonal_conclusions:
+                A = item["A_count"]
+                B = item["B_count"]
+                diff_total = (A / N - B / N) if N > 0 else 0.0
                 worksheet_summary_dirs.write_row(row_dir, 0, [
                     exp_id,
                     item["conclusion"],
                     item["p_value"],
                     item["A_count"],
                     item["B_count"],
-                    item["diff"]
+                    round(diff_total, 6)
                 ])
                 row_dir += 1
+
+        # -------- 条件格式：差值着色（灰/黄/绿） --------
+        fmt_gray = workbook.add_format({'bg_color': '#D9D9D9'})
+        fmt_yellow = workbook.add_format({'bg_color': '#FFD966'})
+        fmt_green = workbook.add_format({'bg_color': '#A9D08E'})
+
+        diff_col_idx = 5  # 差值列在第 6 列（0-based index）
+
+        # doors sheet conditional formatting
+        row_d_end = row_d - 1
+        if row_d_end >= start_row_doors + 1:
+            worksheet_summary_doors.conditional_format(start_row_doors + 1, diff_col_idx, row_d_end, diff_col_idx,
+                {'type': 'cell', 'criteria': '<', 'value': 0.01, 'format': fmt_gray})
+            worksheet_summary_doors.conditional_format(start_row_doors + 1, diff_col_idx, row_d_end, diff_col_idx,
+                {'type': 'cell', 'criteria': 'between', 'minimum': 0.01, 'maximum': 0.02, 'format': fmt_yellow})
+            worksheet_summary_doors.conditional_format(start_row_doors + 1, diff_col_idx, row_d_end, diff_col_idx,
+                {'type': 'cell', 'criteria': '>=', 'value': 0.02, 'format': fmt_green})
+
+        # dirs sheet conditional formatting
+        row_dir_end = row_dir - 1
+        if row_dir_end >= start_row_dirs + 1:
+            worksheet_summary_dirs.conditional_format(start_row_dirs + 1, diff_col_idx, row_dir_end, diff_col_idx,
+                {'type': 'cell', 'criteria': '<', 'value': 0.01, 'format': fmt_gray})
+            worksheet_summary_dirs.conditional_format(start_row_dirs + 1, diff_col_idx, row_dir_end, diff_col_idx,
+                {'type': 'cell', 'criteria': 'between', 'minimum': 0.01, 'maximum': 0.02, 'format': fmt_yellow})
+            worksheet_summary_dirs.conditional_format(start_row_dirs + 1, diff_col_idx, row_dir_end, diff_col_idx,
+                {'type': 'cell', 'criteria': '>=', 'value': 0.02, 'format': fmt_green})
 
     print(f"{out_file} 已生成.")
