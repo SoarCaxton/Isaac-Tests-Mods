@@ -6,9 +6,12 @@ import matplotlib.pyplot as plt
 import re
 import io
 import numpy as np
-from math import atan2, degrees
+from math import atan2, degrees, sqrt
+from scipy.stats import norm
 
-# 常量
+# -----------------------
+# 常量与辅助函数
+# -----------------------
 door_keys = ["Left", "Up", "Right", "Down"]
 direction_keys = ["Left", "Up-Left", "Up", "Up-Right", "Right", "Down-Right", "Down", "Down-Left"]
 
@@ -28,6 +31,7 @@ def angle_cw(dx, dy):
     return -ang                    # 转为顺时针
 
 def get_direction(angle):
+    # 返回与脚本中一致的方向键名（注意下划线）
     if (-180 <= angle < -157.5) or (157.5 <= angle <= 180):
         return "Left"
     elif -157.5 <= angle < -112.5:
@@ -63,6 +67,9 @@ label_pos = {
     "Down_Left": (-4, -4),
 }
 
+# -----------------------
+# 绘图函数
+# -----------------------
 def plot_grid(exp_id, probs):
     size = 13
     cx, cy = size // 2, size // 2
@@ -87,7 +94,9 @@ def plot_grid(exp_id, probs):
     ax.set_title(exp_id)
 
     for d, (x_off, y_off) in label_pos.items():
-        val = probs.get(f"Dir_{d}", None)
+        # df_prob 列名格式为 Dir_<Name with underscore>
+        key = f"Dir_{d}"
+        val = probs.get(key, None)
         if val is not None:
             ax.text(cx + x_off, cy + y_off, f"{val * 100:.2f}%", fontsize=8, ha="center", va="center", color="black")
 
@@ -128,10 +137,52 @@ def plot_doors(exp_id, door_probs):
     buf.seek(0)
     return buf
 
+# -----------------------
+# 置信区间模块（Wilson + Bonferroni）
+# -----------------------
+def get_z(alpha):
+    # alpha 是每个类别的显著性水平（双侧）
+    return norm.ppf(1 - alpha/2)
+
+def wilson_interval(N, A, alpha):
+    # 返回 (lower, upper)
+    z = get_z(alpha)
+    if N == 0:
+        return 0.0, 1.0
+    p_hat = A / N
+    denom = 1 + z*z/N
+    center = p_hat + (z*z)/(2*N)
+    rad = z * sqrt(max(0.0, p_hat*(1-p_hat)/N + (z*z)/(4*N*N)))
+    lower = (center - rad) / denom
+    upper = (center + rad) / denom
+    return max(0.0, lower), min(1.0, upper)
+
+def verify_confidence(N, counts, alpha):
+    # counts: dict label->count
+    results = []
+    for label, A in counts.items():
+        p_hat = A / N if N > 0 else 0.0
+        lower, upper = wilson_interval(N, A, alpha)
+        margin = max(p_hat - lower, upper - p_hat)
+        results.append({
+            "类别": label,
+            "频数": int(A),
+            "估计概率": round(p_hat, 6),
+            "下界": round(lower, 6),
+            "上界": round(upper, 6),
+            "误差幅度": round(margin, 6),
+            "≤1%": bool(margin <= 0.01)
+        })
+    return results
+
+# -----------------------
 # 与 df_prob 对应的方向列名列表（用于后续安全取值）
+# -----------------------
 dir_cols = [f"Dir_{k.replace('-', '_')}" for k in direction_keys]
 
-# 批处理当前目录下所有 .dat 文件
+# -----------------------
+# 主处理流程：批处理当前目录下所有 .dat 文件
+# -----------------------
 for dat_file in glob.glob("*.dat"):
     base_name = os.path.splitext(os.path.basename(dat_file))[0]
     out_file = f"{base_name}.xlsx"
@@ -157,7 +208,6 @@ for dat_file in glob.glob("*.dat"):
 
     # -------- 第二页：概率统计 --------
     df_prob = df_data.copy()
-    # 防止除以0
     totals = df_data["Total"].replace(0, np.nan)
     for k in door_keys:
         df_prob[f"Door_{k}"] = df_data[f"Door_{k}"] / totals
@@ -201,7 +251,6 @@ for dat_file in glob.glob("*.dat"):
     # 新增列：组合标准差 = sqrt(直角方向方差 + 斜角方向方差)
     df_norm["Dir_combined_std(%)"] = np.sqrt(df_norm["Dir_straight_var(%^2)"] + df_norm["Dir_diagonal_var(%^2)"])
 
-
     # 保持列顺序（存在性检查以防极端情况）
     ordered_cols = (
         ["ID", "Door_mean"]
@@ -213,7 +262,7 @@ for dat_file in glob.glob("*.dat"):
         "Dir_diagonal_mean"]
         + [f"Dir_{k.replace('-', '_')}(%)" for k in ["Up-Left","Up-Right","Down-Right","Down-Left"]]
         + ["Dir_diagonal_var(%^2)", "Dir_diagonal_std(%)",
-        "Dir_combined_std(%)"]   # 新增列放在最后
+        "Dir_combined_std(%)"]
     )
     ordered_cols = [c for c in ordered_cols if c in df_norm.columns]
     df_norm = df_norm[ordered_cols]
@@ -240,7 +289,6 @@ for dat_file in glob.glob("*.dat"):
         highlight_stds  = [c for c in ["Door_std(%)", "Dir_straight_std(%)", "Dir_diagonal_std(%)", "Dir_combined_std(%)"] if c in df_norm.columns]
 
         # 还可以把单项偏差列也高亮为同一色系（可选）
-        # 例如把所有 "(%)" 结尾的列标为淡蓝
         item_diff_fmt = workbook.add_format({'bg_color': '#D9EAF7'})
         item_diff_cols = [c for c in df_norm.columns if c.endswith("(%)") and c not in highlight_stds]
 
@@ -313,5 +361,52 @@ for dat_file in glob.glob("*.dat"):
                 worksheet_dirs.insert_image(row_offset, col_offset, exp_id + ".png", {"image_data": buf})
                 col_offset += 5
             row_offset += 18
+
+        # -------- 新增一页：置信区间验证（Wilson + Bonferroni） --------
+        worksheet_ci = workbook.add_worksheet("置信区间验证")
+        writer.sheets["置信区间验证"] = worksheet_ci
+
+        # 写表头样式
+        header_fmt = workbook.add_format({'bold': True, 'bg_color': '#DCE6F1'})
+        small_col_width = 12
+        worksheet_ci.set_column(0, 0, 18)
+        worksheet_ci.set_column(1, 1, small_col_width)
+        worksheet_ci.set_column(2, 6, 14)
+
+        row_offset = 0
+        for exp_id in sorted_ids:
+            exp = data[exp_id]
+            N = exp.get("Total", 0)
+
+            # Doors (Bonferroni α = 0.05/4)
+            alpha_doors = 0.05 / 4
+            door_counts = {k: exp["Doors"].get(k, 0) for k in door_keys}
+            door_results = verify_confidence(N, door_counts, alpha_doors)
+
+            worksheet_ci.write(row_offset, 0, f"实验 {exp_id} - Doors", header_fmt)
+            row_offset += 1
+            headers = ["类别","频数","估计概率","下界","上界","误差幅度","≤1%"]
+            worksheet_ci.write_row(row_offset, 0, headers, header_fmt)
+            row_offset += 1
+            for r in door_results:
+                worksheet_ci.write_row(row_offset, 0, [r[h] for h in headers])
+                row_offset += 1
+
+            row_offset += 1
+
+            # Directions (Bonferroni α = 0.05/8)
+            alpha_dirs = 0.05 / 8
+            dir_counts = {k: exp["Directions"].get(k, 0) for k in direction_keys}
+            dir_results = verify_confidence(N, dir_counts, alpha_dirs)
+
+            worksheet_ci.write(row_offset, 0, f"实验 {exp_id} - Directions", header_fmt)
+            row_offset += 1
+            worksheet_ci.write_row(row_offset, 0, headers, header_fmt)
+            row_offset += 1
+            for r in dir_results:
+                worksheet_ci.write_row(row_offset, 0, [r[h] for h in headers])
+                row_offset += 1
+
+            row_offset += 2  # 空行分隔
 
     print(f"{out_file} 已生成.")
