@@ -198,18 +198,22 @@ for dat_file in glob.glob("*.dat"):
         df_norm[f"{col}(%)"] = (df_prob[col] - df_norm["Dir_diagonal_mean"]) * 100
     df_norm["Dir_diagonal_var(%^2)"] = dir_diagonal_nonzero.mul(100).var(axis=1, ddof=0, skipna=True).fillna(0)
     df_norm["Dir_diagonal_std(%)"] = np.sqrt(df_norm["Dir_diagonal_var(%^2)"])
+    # 新增列：组合标准差 = sqrt(直角方向方差 + 斜角方向方差)
+    df_norm["Dir_combined_std(%)"] = np.sqrt(df_norm["Dir_straight_var(%^2)"] + df_norm["Dir_diagonal_var(%^2)"])
+
 
     # 保持列顺序（存在性检查以防极端情况）
     ordered_cols = (
         ["ID", "Door_mean"]
         + [f"Door_{k}(%)" for k in door_keys]
         + ["Door_var(%^2)", "Door_std(%)",
-           "Dir_straight_mean"]
+        "Dir_straight_mean"]
         + [f"Dir_{k}(%)" for k in ["Left","Up","Right","Down"]]
         + ["Dir_straight_var(%^2)", "Dir_straight_std(%)",
-           "Dir_diagonal_mean"]
+        "Dir_diagonal_mean"]
         + [f"Dir_{k.replace('-', '_')}(%)" for k in ["Up-Left","Up-Right","Down-Right","Down-Left"]]
-        + ["Dir_diagonal_var(%^2)", "Dir_diagonal_std(%)"]
+        + ["Dir_diagonal_var(%^2)", "Dir_diagonal_std(%)",
+        "Dir_combined_std(%)"]   # 新增列放在最后
     )
     ordered_cols = [c for c in ordered_cols if c in df_norm.columns]
     df_norm = df_norm[ordered_cols]
@@ -233,7 +237,7 @@ for dat_file in glob.glob("*.dat"):
         # 要高亮的列名集合（尽量与 df_norm 列名一致）
         highlight_means = [c for c in ["Door_mean", "Dir_straight_mean", "Dir_diagonal_mean"] if c in df_norm.columns]
         highlight_vars  = [c for c in ["Door_var(%^2)", "Dir_straight_var(%^2)", "Dir_diagonal_var(%^2)"] if c in df_norm.columns]
-        highlight_stds  = [c for c in ["Door_std(%)", "Dir_straight_std(%)", "Dir_diagonal_std(%)"] if c in df_norm.columns]
+        highlight_stds  = [c for c in ["Door_std(%)", "Dir_straight_std(%)", "Dir_diagonal_std(%)", "Dir_combined_std(%)"] if c in df_norm.columns]
 
         # 还可以把单项偏差列也高亮为同一色系（可选）
         # 例如把所有 "(%)" 结尾的列标为淡蓝
