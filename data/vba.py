@@ -21,7 +21,6 @@ if __name__ == "__main__":
 Sub BatchSaveAsHTMLRecursive()
     Dim fso As Object
     Dim folder As Object
-    Dim wb As Workbook
     Dim dict As Object
     Dim indexPath As String
     Dim f As Integer
@@ -68,6 +67,7 @@ Sub ProcessFolder(f As Object, rootPath As String, dict As Object)
     Dim folderName As String
     Dim files() As String
     Dim count As Integer
+    Dim htmlPath As String
     
     folderName = Replace(f.Path, rootPath & "\\", "")
     If folderName = "" Then folderName = "(根目录)"
@@ -78,9 +78,13 @@ Sub ProcessFolder(f As Object, rootPath As String, dict As Object)
         If LCase(Right(file.Name, 5)) = ".xlsx" Then
             If Left(file.Name, 2) <> "~$" Then
                 Set wb = Workbooks.Open(file.Path)
-                Application.DefaultWebOptions.Encoding = msoEncodingUTF8
                 wb.SaveAs Replace(file.Path, ".xlsx", ".html"), FileFormat:=44
                 wb.Close SaveChanges:=False
+                
+                ' 修复 HTML 编码声明
+                htmlPath = Replace(file.Path, ".xlsx", ".html")
+                Call FixEncoding(htmlPath)
+                
                 relPath = Replace(file.Path, rootPath & "\\", "")
                 relPath = Replace(relPath, ".xlsx", ".html")
                 relPath = Replace(relPath, "\\", "/") ' 转换为网页路径格式
@@ -98,6 +102,34 @@ Sub ProcessFolder(f As Object, rootPath As String, dict As Object)
     For Each subFolder In f.SubFolders
         ProcessFolder subFolder, rootPath, dict
     Next
+End Sub
+
+Sub FixEncoding(htmlPath As String)
+    Dim fileContent As String
+    Dim fso As Object
+    Dim ts As Object
+
+    ' 用 ANSI 方式读取原始 HTML 内容
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    Set ts = fso.OpenTextFile(htmlPath, 1, False) ' ForReading
+    fileContent = ts.ReadAll
+    ts.Close
+
+    ' 替换编码声明
+    fileContent = Replace(fileContent, "charset=windows-1252", "charset=utf-8")
+    fileContent = Replace(fileContent, "charset=gb2312", "charset=utf-8")
+
+    ' 用 UTF-8 方式写入文件
+    Dim stream As Object
+    Set stream = CreateObject("ADODB.Stream")
+    With stream
+        .Type = 2 ' Text
+        .Charset = "utf-8"
+        .Open
+        .WriteText fileContent
+        .SaveToFile htmlPath, 2 ' Overwrite
+        .Close
+    End With
 End Sub
 """
 
