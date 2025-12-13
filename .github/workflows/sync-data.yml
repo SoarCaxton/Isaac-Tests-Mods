@@ -1,0 +1,23 @@
+name: Sync data folder
+
+on:
+  push:
+    branches:
+      - BossDirection
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Push data folder to target repo
+        run: |
+          cd data
+          git init
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote add target https://github.com/SoarCaxton/Boss-Direction-Statistics.git
+          git add .
+          git commit -m "Sync data folder from BossDirection branch"
+          git push --force target main
