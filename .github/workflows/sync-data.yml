@@ -3,13 +3,17 @@ name: Sync data folder
 on:
   push:
     branches:
-      - BossDirection
+      - BossDirection   # 当 BossDirection 分支有 push 时触发
 
 jobs:
   sync:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout source repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0   # 保留完整历史，避免缺失
 
       - name: Push data folder to target repo
         run: |
