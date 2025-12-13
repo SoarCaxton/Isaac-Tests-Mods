@@ -6,7 +6,7 @@
 
 ## vba.py
 
-用于批量将xlsx转换为mht
+用于批量将xlsx转换为html
 
 ## path.py
 

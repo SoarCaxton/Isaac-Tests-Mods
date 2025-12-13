@@ -1,0 +1,605 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+xmlns:x="urn:schemas-microsoft-com:office:excel"
+xmlns="http://www.w3.org/TR/REC-html40">
+
+<head>
+<meta http-equiv=Content-Type content="text/html; charset=gb2312">
+<meta name=ProgId content=Excel.Sheet>
+<meta name=Generator content="Microsoft Excel 15">
+<link id=Main-File rel=Main-File href="../rep_BDXL_3.00w.html">
+<link rel=File-List href=filelist.xml>
+<link rel=Stylesheet href=stylesheet.css>
+<style>
+<!--table
+	{mso-displayed-decimal-separator:"\.";
+	mso-displayed-thousand-separator:"\,";}
+@page
+	{margin:.75in .7in .75in .7in;
+	mso-header-margin:.3in;
+	mso-footer-margin:.3in;}
+ruby
+	{ruby-align:left;}
+rt
+	{color:windowtext;
+	font-size:9.0pt;
+	font-weight:400;
+	font-style:normal;
+	text-decoration:none;
+	font-family:宋体;
+	mso-generic-font-family:auto;
+	mso-font-charset:134;
+	mso-char-type:none;
+	display:none;}
+-->
+</style>
+<![if !supportTabStrip]><script language="JavaScript">
+<!--
+function fnUpdateTabs()
+ {
+  if (parent.window.g_iIEVer>=4) {
+   if (parent.document.readyState=="complete"
+    && parent.frames['frTabs'].document.readyState=="complete")
+   parent.fnSetActiveSheet(2);
+  else
+   window.setTimeout("fnUpdateTabs();",150);
+ }
+}
+
+if (window.name!="frSheet")
+ window.location.replace("../rep_BDXL_3.00w.html");
+else
+ fnUpdateTabs();
+//-->
+</script>
+<![endif]>
+</head>
+
+<body link=blue vlink=purple>
+
+<table border=0 cellpadding=0 cellspacing=0 width=1586 style='border-collapse:
+ collapse;table-layout:fixed;width:1173pt'>
+ <col width=68 style='width:51pt'>
+ <col class=xl66 width=69 style='width:51pt'>
+ <col class=xl67 width=69 span=4 style='width:51pt'>
+ <col class=xl68 width=69 style='width:51pt'>
+ <col class=xl69 width=69 style='width:51pt'>
+ <col class=xl66 width=69 style='width:51pt'>
+ <col class=xl67 width=69 span=4 style='width:51pt'>
+ <col class=xl68 width=69 style='width:51pt'>
+ <col class=xl69 width=69 style='width:51pt'>
+ <col class=xl66 width=69 style='width:51pt'>
+ <col class=xl67 width=69 span=4 style='width:51pt'>
+ <col class=xl68 width=69 style='width:51pt'>
+ <col class=xl69 width=69 span=2 style='width:51pt'>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 class=xl65 width=68 style='height:13.5pt;width:51pt'>ID</td>
+  <td class=xl65 width=69 style='border-left:none;width:51pt'>Door_mean</td>
+  <td class=xl65 width=69 style='border-left:none;width:51pt'>Door_Left(%)</td>
+  <td class=xl65 width=69 style='border-left:none;width:51pt'>Door_Up(%)</td>
+  <td class=xl65 width=69 style='border-left:none;width:51pt'>Door_Right(%)</td>
+  <td class=xl65 width=69 style='border-left:none;width:51pt'>Door_Down(%)</td>
+  <td class=xl65 width=69 style='border-left:none;width:51pt'>Door_var(%^2)</td>
+  <td class=xl65 width=69 style='border-left:none;width:51pt'>Door_std(%)</td>
+  <td class=xl65 width=69 style='border-left:none;width:51pt'>Dir_straight_mean</td>
+  <td class=xl65 width=69 style='border-left:none;width:51pt'>Dir_Left(%)</td>
+  <td class=xl65 width=69 style='border-left:none;width:51pt'>Dir_Up(%)</td>
+  <td class=xl65 width=69 style='border-left:none;width:51pt'>Dir_Right(%)</td>
+  <td class=xl65 width=69 style='border-left:none;width:51pt'>Dir_Down(%)</td>
+  <td class=xl65 width=69 style='border-left:none;width:51pt'>Dir_straight_var(%^2)</td>
+  <td class=xl65 width=69 style='border-left:none;width:51pt'>Dir_straight_std(%)</td>
+  <td class=xl65 width=69 style='border-left:none;width:51pt'>Dir_diagonal_mean</td>
+  <td class=xl65 width=69 style='border-left:none;width:51pt'>Dir_Up_Left(%)</td>
+  <td class=xl65 width=69 style='border-left:none;width:51pt'>Dir_Up_Right(%)</td>
+  <td class=xl65 width=69 style='border-left:none;width:51pt'>Dir_Down_Right(%)</td>
+  <td class=xl65 width=69 style='border-left:none;width:51pt'>Dir_Down_Left(%)</td>
+  <td class=xl65 width=69 style='border-left:none;width:51pt'>Dir_diagonal_var(%^2)</td>
+  <td class=xl65 width=69 style='border-left:none;width:51pt'>Dir_diagonal_std(%)</td>
+  <td class=xl65 width=69 style='border-left:none;width:51pt'>Dir_combined_std(%)</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>1</td>
+  <td class=xl66 align=right>0.310565</td>
+  <td class=xl67 align=right>-0.40316</td>
+  <td class=xl67 align=right>-0.33319</td>
+  <td class=xl67 align=right>-0.06664</td>
+  <td class=xl67 align=right>0.802985</td>
+  <td class=xl68 align=right>0.230694</td>
+  <td class=xl69 align=right>0.480307</td>
+  <td class=xl66 align=right>0.116366</td>
+  <td class=xl67 align=right>-0.35151</td>
+  <td class=xl67 align=right>0.064972</td>
+  <td class=xl67 align=right>-0.02832</td>
+  <td class=xl67 align=right>0.314864</td>
+  <td class=xl68 align=right>0.056931</td>
+  <td class=xl69 align=right>0.238603</td>
+  <td class=xl66 align=right>0.133634</td>
+  <td class=xl67 align=right>-0.27238</td>
+  <td class=xl67 align=right>-0.20908</td>
+  <td class=xl67 align=right>0.370673</td>
+  <td class=xl67 align=right>0.110785</td>
+  <td class=xl68 align=right>0.066894</td>
+  <td class=xl69 align=right>0.258639</td>
+  <td class=xl69 align=right>0.351888</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>1a</td>
+  <td class=xl66 align=right>0.310574</td>
+  <td class=xl67 align=right>-0.33402</td>
+  <td class=xl67 align=right>-0.17742</td>
+  <td class=xl67 align=right>-0.17742</td>
+  <td class=xl67 align=right>0.688868</td>
+  <td class=xl68 align=right>0.162267</td>
+  <td class=xl69 align=right>0.402824</td>
+  <td class=xl66 align=right>0.116724</td>
+  <td class=xl67 align=right>-0.26072</td>
+  <td class=xl67 align=right>0.275714</td>
+  <td class=xl67 align=right>-0.16076</td>
+  <td class=xl67 align=right>0.14577</td>
+  <td class=xl68 align=right>0.047772</td>
+  <td class=xl69 align=right>0.218568</td>
+  <td class=xl66 align=right>0.133276</td>
+  <td class=xl67 align=right>-0.08996</td>
+  <td class=xl67 align=right>-0.20325</td>
+  <td class=xl67 align=right>0.249892</td>
+  <td class=xl67 align=right>0.043315</td>
+  <td class=xl68 align=right>0.028431</td>
+  <td class=xl69 align=right>0.168615</td>
+  <td class=xl69 align=right>0.276048</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>1b</td>
+  <td class=xl66 align=right>0.310824</td>
+  <td class=xl67 align=right>-0.48229</td>
+  <td class=xl67 align=right>-0.19242</td>
+  <td class=xl67 align=right>-0.14577</td>
+  <td class=xl67 align=right>0.820478</td>
+  <td class=xl68 align=right>0.241015</td>
+  <td class=xl69 align=right>0.490933</td>
+  <td class=xl66 align=right>0.116724</td>
+  <td class=xl67 align=right>-0.28738</td>
+  <td class=xl67 align=right>0.03915</td>
+  <td class=xl67 align=right>-0.01416</td>
+  <td class=xl67 align=right>0.262386</td>
+  <td class=xl68 align=right>0.038291</td>
+  <td class=xl69 align=right>0.195681</td>
+  <td class=xl66 align=right>0.133276</td>
+  <td class=xl67 align=right>-0.26655</td>
+  <td class=xl67 align=right>-0.32319</td>
+  <td class=xl67 align=right>0.523107</td>
+  <td class=xl67 align=right>0.066638</td>
+  <td class=xl68 align=right>0.113396</td>
+  <td class=xl69 align=right>0.336743</td>
+  <td class=xl69 align=right>0.38947</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>1c</td>
+  <td class=xl66 align=right>0.296381</td>
+  <td class=xl67 align=right>0.38318</td>
+  <td class=xl67 align=right>-1.62935</td>
+  <td class=xl67 align=right>0.939624</td>
+  <td class=xl67 align=right>0.306544</td>
+  <td class=xl68 align=right>0.944616</td>
+  <td class=xl69 align=right>0.971914</td>
+  <td class=xl66 align=right>0.107824</td>
+  <td class=xl67 align=right>0.453152</td>
+  <td class=xl67 align=right>-0.4998</td>
+  <td class=xl67 align=right>0.126616</td>
+  <td class=xl67 align=right>-0.07997</td>
+  <td class=xl68 align=right>0.119393</td>
+  <td class=xl69 align=right>0.345533</td>
+  <td class=xl66 align=right>0.142176</td>
+  <td class=xl67 align=right>0.256564</td>
+  <td class=xl67 align=right>0.409836</td>
+  <td class=xl67 align=right>-0.7597</td>
+  <td class=xl67 align=right>0.093296</td>
+  <td class=xl68 align=right>0.204908</td>
+  <td class=xl69 align=right>0.452668</td>
+  <td class=xl69 align=right>0.569475</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>1d</td>
+  <td class=xl66 align=right>0.29604</td>
+  <td class=xl67 align=right>0.487305</td>
+  <td class=xl67 align=right>-1.61519</td>
+  <td class=xl67 align=right>0.677229</td>
+  <td class=xl67 align=right>0.450653</td>
+  <td class=xl68 align=right>0.877006</td>
+  <td class=xl69 align=right>0.936486</td>
+  <td class=xl66 align=right>0.108082</td>
+  <td class=xl67 align=right>0.234073</td>
+  <td class=xl67 align=right>-0.409</td>
+  <td class=xl67 align=right>0.230741</td>
+  <td class=xl67 align=right>-0.05581</td>
+  <td class=xl68 align=right>0.069607</td>
+  <td class=xl69 align=right>0.263832</td>
+  <td class=xl66 align=right>0.141918</td>
+  <td class=xl67 align=right>0.345695</td>
+  <td class=xl67 align=right>-0.11079</td>
+  <td class=xl67 align=right>-0.39734</td>
+  <td class=xl67 align=right>0.162435</td>
+  <td class=xl68 align=right>0.079011</td>
+  <td class=xl69 align=right>0.281089</td>
+  <td class=xl69 align=right>0.385511</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>3</td>
+  <td class=xl66 align=right>0.304811</td>
+  <td class=xl67 align=right>0.4165</td>
+  <td class=xl67 align=right>-0.40317</td>
+  <td class=xl67 align=right>-0.47981</td>
+  <td class=xl67 align=right>0.46648</td>
+  <td class=xl68 align=right>0.19596</td>
+  <td class=xl69 align=right>0.442674</td>
+  <td class=xl66 align=right>0.130115</td>
+  <td class=xl67 align=right>-0.36985</td>
+  <td class=xl67 align=right>0.623084</td>
+  <td class=xl67 align=right>-0.44316</td>
+  <td class=xl67 align=right>0.189924</td>
+  <td class=xl68 align=right>0.189371</td>
+  <td class=xl69 align=right>0.435167</td>
+  <td class=xl66 align=right>0.119885</td>
+  <td class=xl67 align=right>0.373184</td>
+  <td class=xl67 align=right>-0.02999</td>
+  <td class=xl67 align=right>-0.40984</td>
+  <td class=xl67 align=right>0.06664</td>
+  <td class=xl68 align=right>0.078143</td>
+  <td class=xl69 align=right>0.279541</td>
+  <td class=xl69 align=right>0.517217</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>3a</td>
+  <td class=xl66 align=right>0.305186</td>
+  <td class=xl67 align=right>0.715547</td>
+  <td class=xl67 align=right>-0.70722</td>
+  <td class=xl67 align=right>-0.14744</td>
+  <td class=xl67 align=right>0.139111</td>
+  <td class=xl68 align=right>0.263314</td>
+  <td class=xl69 align=right>0.513141</td>
+  <td class=xl66 align=right>0.130056</td>
+  <td class=xl67 align=right>0.109123</td>
+  <td class=xl67 align=right>-0.07414</td>
+  <td class=xl67 align=right>-0.01083</td>
+  <td class=xl67 align=right>-0.02416</td>
+  <td class=xl68 align=right>0.004526</td>
+  <td class=xl69 align=right>0.067277</td>
+  <td class=xl66 align=right>0.119944</td>
+  <td class=xl67 align=right>0.120785</td>
+  <td class=xl67 align=right>-0.06581</td>
+  <td class=xl67 align=right>-0.20242</td>
+  <td class=xl67 align=right>0.147441</td>
+  <td class=xl68 align=right>0.020408</td>
+  <td class=xl69 align=right>0.142856</td>
+  <td class=xl69 align=right>0.157906</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>3b</td>
+  <td class=xl66 align=right>0.305153</td>
+  <td class=xl67 align=right>0.209083</td>
+  <td class=xl67 align=right>-0.23741</td>
+  <td class=xl67 align=right>-0.45732</td>
+  <td class=xl67 align=right>0.485639</td>
+  <td class=xl68 align=right>0.136265</td>
+  <td class=xl69 align=right>0.369141</td>
+  <td class=xl66 align=right>0.130056</td>
+  <td class=xl67 align=right>-0.59393</td>
+  <td class=xl67 align=right>0.735539</td>
+  <td class=xl67 align=right>-0.414</td>
+  <td class=xl67 align=right>0.272391</td>
+  <td class=xl68 align=right>0.284841</td>
+  <td class=xl69 align=right>0.533705</td>
+  <td class=xl66 align=right>0.119944</td>
+  <td class=xl67 align=right>0.317373</td>
+  <td class=xl67 align=right>0.094129</td>
+  <td class=xl67 align=right>-0.24907</td>
+  <td class=xl67 align=right>-0.16244</td>
+  <td class=xl68 align=right>0.049501</td>
+  <td class=xl69 align=right>0.222489</td>
+  <td class=xl69 align=right>0.578223</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>3c</td>
+  <td class=xl66 align=right>0.302146</td>
+  <td class=xl67 align=right>-0.7597</td>
+  <td class=xl67 align=right>0.409836</td>
+  <td class=xl67 align=right>-0.11995</td>
+  <td class=xl67 align=right>0.469812</td>
+  <td class=xl68 align=right>0.245054</td>
+  <td class=xl69 align=right>0.495029</td>
+  <td class=xl66 align=right>0.11782</td>
+  <td class=xl67 align=right>-1.68932</td>
+  <td class=xl67 align=right>3.611889</td>
+  <td class=xl67 align=right>-1.72598</td>
+  <td class=xl67 align=right>-0.19659</td>
+  <td class=xl68 align=right>4.729299</td>
+  <td class=xl69 align=right>2.174695</td>
+  <td class=xl66 align=right>0.13218</td>
+  <td class=xl67 align=right>3.285353</td>
+  <td class=xl67 align=right>3.11542</td>
+  <td class=xl67 align=right>-3.30868</td>
+  <td class=xl67 align=right>-3.0921</td>
+  <td class=xl68 align=right>10.25195</td>
+  <td class=xl69 align=right>3.201866</td>
+  <td class=xl69 align=right>3.870561</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>3d</td>
+  <td class=xl66 align=right>0.304736</td>
+  <td class=xl67 align=right>0.460649</td>
+  <td class=xl67 align=right>-0.409</td>
+  <td class=xl67 align=right>0.050813</td>
+  <td class=xl67 align=right>-0.10246</td>
+  <td class=xl68 align=right>0.09814</td>
+  <td class=xl69 align=right>0.313273</td>
+  <td class=xl66 align=right>0.120627</td>
+  <td class=xl67 align=right>0.292383</td>
+  <td class=xl67 align=right>0.445655</td>
+  <td class=xl67 align=right>0.305711</td>
+  <td class=xl67 align=right>-1.04375</td>
+  <td class=xl68 align=right>0.366742</td>
+  <td class=xl69 align=right>0.605592</td>
+  <td class=xl66 align=right>0.129373</td>
+  <td class=xl67 align=right>1.233673</td>
+  <td class=xl67 align=right>0.713881</td>
+  <td class=xl67 align=right>-1.11872</td>
+  <td class=xl67 align=right>-0.82884</td>
+  <td class=xl68 align=right>0.992519</td>
+  <td class=xl69 align=right>0.996252</td>
+  <td class=xl69 align=right>1.165873</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>5</td>
+  <td class=xl66 align=right>0.372484</td>
+  <td class=xl67 align=right>2.588964</td>
+  <td class=xl67 align=right>-37.2484</td>
+  <td class=xl67 align=right>3.142077</td>
+  <td class=xl67 align=right>-5.73104</td>
+  <td class=xl68 align=right>16.4734</td>
+  <td class=xl69 align=right>4.058744</td>
+  <td class=xl66 align=right>0.131406</td>
+  <td class=xl67 align=right>-1.47524</td>
+  <td class=xl67 align=right>2.916333</td>
+  <td class=xl67 align=right>-1.47524</td>
+  <td class=xl67 align=right>0.034153</td>
+  <td class=xl68 align=right>3.214713</td>
+  <td class=xl69 align=right>1.792962</td>
+  <td class=xl66 align=right>0.118594</td>
+  <td class=xl67 align=right>1.162035</td>
+  <td class=xl67 align=right>1.418599</td>
+  <td class=xl67 align=right>-1.01376</td>
+  <td class=xl67 align=right>-1.56687</td>
+  <td class=xl68 align=right>1.711388</td>
+  <td class=xl69 align=right>1.3082</td>
+  <td class=xl69 align=right>2.219482</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>5a</td>
+  <td class=xl66 align=right>0.372984</td>
+  <td class=xl67 align=right>2.845528</td>
+  <td class=xl67 align=right>-37.2984</td>
+  <td class=xl67 align=right>3.222045</td>
+  <td class=xl67 align=right>-6.06757</td>
+  <td class=xl68 align=right>18.43135</td>
+  <td class=xl69 align=right>4.293175</td>
+  <td class=xl66 align=right>0.132239</td>
+  <td class=xl67 align=right>-0.50563</td>
+  <td class=xl67 align=right>1.696821</td>
+  <td class=xl67 align=right>-0.62892</td>
+  <td class=xl67 align=right>-0.56228</td>
+  <td class=xl68 align=right>0.961638</td>
+  <td class=xl69 align=right>0.980632</td>
+  <td class=xl66 align=right>0.117761</td>
+  <td class=xl67 align=right>0.825503</td>
+  <td class=xl67 align=right>1.148707</td>
+  <td class=xl67 align=right>-0.86382</td>
+  <td class=xl67 align=right>-1.11039</td>
+  <td class=xl68 align=right>0.995034</td>
+  <td class=xl69 align=right>0.997514</td>
+  <td class=xl69 align=right>1.398811</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>5b</td>
+  <td class=xl66 align=right>0.372418</td>
+  <td class=xl67 align=right>2.585632</td>
+  <td class=xl67 align=right>-37.2418</td>
+  <td class=xl67 align=right>3.148741</td>
+  <td class=xl67 align=right>-5.73437</td>
+  <td class=xl68 align=right>16.49436</td>
+  <td class=xl69 align=right>4.061326</td>
+  <td class=xl66 align=right>0.131706</td>
+  <td class=xl67 align=right>-1.61519</td>
+  <td class=xl67 align=right>3.009629</td>
+  <td class=xl67 align=right>-1.62518</td>
+  <td class=xl67 align=right>0.230741</td>
+  <td class=xl68 align=right>3.59029</td>
+  <td class=xl69 align=right>1.894806</td>
+  <td class=xl66 align=right>0.118294</td>
+  <td class=xl67 align=right>1.152039</td>
+  <td class=xl67 align=right>1.415267</td>
+  <td class=xl67 align=right>-0.96378</td>
+  <td class=xl67 align=right>-1.60353</td>
+  <td class=xl68 align=right>1.707586</td>
+  <td class=xl69 align=right>1.306746</td>
+  <td class=xl69 align=right>2.301712</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>5c</td>
+  <td class=xl66 align=right>0.305669</td>
+  <td class=xl67 align=right>-0.60892</td>
+  <td class=xl67 align=right>0.000833</td>
+  <td class=xl67 align=right>0.440657</td>
+  <td class=xl67 align=right>0.167433</td>
+  <td class=xl68 align=right>0.14825</td>
+  <td class=xl69 align=right>0.385033</td>
+  <td class=xl66 align=right>0.13333</td>
+  <td class=xl67 align=right>-0.34486</td>
+  <td class=xl67 align=right>0.114954</td>
+  <td class=xl67 align=right>0.048314</td>
+  <td class=xl67 align=right>0.181594</td>
+  <td class=xl68 align=right>0.041864</td>
+  <td class=xl69 align=right>0.204606</td>
+  <td class=xl66 align=right>0.11667</td>
+  <td class=xl67 align=right>0.018326</td>
+  <td class=xl67 align=right>0.431494</td>
+  <td class=xl67 align=right>-0.17493</td>
+  <td class=xl67 align=right>-0.27489</td>
+  <td class=xl68 align=right>0.073172</td>
+  <td class=xl69 align=right>0.270503</td>
+  <td class=xl69 align=right>0.339169</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>5d</td>
+  <td class=xl66 align=right>0.30527</td>
+  <td class=xl67 align=right>-0.29238</td>
+  <td class=xl67 align=right>-0.06914</td>
+  <td class=xl67 align=right>0.334033</td>
+  <td class=xl67 align=right>0.027489</td>
+  <td class=xl68 align=right>0.05065</td>
+  <td class=xl69 align=right>0.225057</td>
+  <td class=xl66 align=right>0.133038</td>
+  <td class=xl67 align=right>-0.16577</td>
+  <td class=xl67 align=right>0.164101</td>
+  <td class=xl67 align=right>-0.10579</td>
+  <td class=xl67 align=right>0.107457</td>
+  <td class=xl68 align=right>0.019287</td>
+  <td class=xl69 align=right>0.138876</td>
+  <td class=xl66 align=right>0.116962</td>
+  <td class=xl67 align=right>0.045815</td>
+  <td class=xl67 align=right>0.362355</td>
+  <td class=xl67 align=right>-0.19409</td>
+  <td class=xl67 align=right>-0.21408</td>
+  <td class=xl68 align=right>0.054225</td>
+  <td class=xl69 align=right>0.232863</td>
+  <td class=xl69 align=right>0.271131</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>7</td>
+  <td class=xl66 align=right>0.303505</td>
+  <td class=xl67 align=right>-0.68475</td>
+  <td class=xl67 align=right>0.558129</td>
+  <td class=xl67 align=right>-0.26823</td>
+  <td class=xl67 align=right>0.394855</td>
+  <td class=xl68 align=right>0.252062</td>
+  <td class=xl69 align=right>0.502058</td>
+  <td class=xl66 align=right>0.130502</td>
+  <td class=xl67 align=right>-1.22788</td>
+  <td class=xl67 align=right>1.784346</td>
+  <td class=xl67 align=right>-1.51444</td>
+  <td class=xl67 align=right>0.957982</td>
+  <td class=xl68 align=right>1.975715</td>
+  <td class=xl69 align=right>1.405601</td>
+  <td class=xl66 align=right>0.119498</td>
+  <td class=xl67 align=right>0.482323</td>
+  <td class=xl67 align=right>0.472327</td>
+  <td class=xl67 align=right>-0.63727</td>
+  <td class=xl67 align=right>-0.31738</td>
+  <td class=xl68 align=right>0.240642</td>
+  <td class=xl69 align=right>0.490553</td>
+  <td class=xl69 align=right>1.488743</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>7a</td>
+  <td class=xl66 align=right>0.304247</td>
+  <td class=xl67 align=right>-0.23575</td>
+  <td class=xl67 align=right>0.254074</td>
+  <td class=xl67 align=right>0.370697</td>
+  <td class=xl67 align=right>-0.38902</td>
+  <td class=xl68 align=right>0.102222</td>
+  <td class=xl69 align=right>0.319721</td>
+  <td class=xl66 align=right>0.133234</td>
+  <td class=xl67 align=right>-0.01166</td>
+  <td class=xl67 align=right>0.281563</td>
+  <td class=xl67 align=right>-0.31488</td>
+  <td class=xl67 align=right>0.044984</td>
+  <td class=xl68 align=right>0.045147</td>
+  <td class=xl69 align=right>0.212479</td>
+  <td class=xl66 align=right>0.116766</td>
+  <td class=xl67 align=right>0.039152</td>
+  <td class=xl67 align=right>0.155776</td>
+  <td class=xl67 align=right>0.052481</td>
+  <td class=xl67 align=right>-0.24741</td>
+  <td class=xl68 align=right>0.022441</td>
+  <td class=xl69 align=right>0.149804</td>
+  <td class=xl69 align=right>0.259978</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>7b</td>
+  <td class=xl66 align=right>0.303647</td>
+  <td class=xl67 align=right>-0.6256</td>
+  <td class=xl67 align=right>0.597281</td>
+  <td class=xl67 align=right>0.060811</td>
+  <td class=xl67 align=right>-0.03249</td>
+  <td class=xl68 align=right>0.18822</td>
+  <td class=xl69 align=right>0.433843</td>
+  <td class=xl66 align=right>0.131527</td>
+  <td class=xl67 align=right>-0.86718</td>
+  <td class=xl67 align=right>1.328679</td>
+  <td class=xl67 align=right>-1.09043</td>
+  <td class=xl67 align=right>0.628936</td>
+  <td class=xl68 align=right>1.0255</td>
+  <td class=xl69 align=right>1.01267</td>
+  <td class=xl66 align=right>0.118473</td>
+  <td class=xl67 align=right>0.601446</td>
+  <td class=xl67 align=right>0.174936</td>
+  <td class=xl67 align=right>-0.34487</td>
+  <td class=xl67 align=right>-0.43151</td>
+  <td class=xl68 align=right>0.174369</td>
+  <td class=xl69 align=right>0.417576</td>
+  <td class=xl69 align=right>1.095385</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>7c</td>
+  <td class=xl66 align=right>0.30508</td>
+  <td class=xl67 align=right>-0.25574</td>
+  <td class=xl67 align=right>-0.11246</td>
+  <td class=xl67 align=right>0.274066</td>
+  <td class=xl67 align=right>0.094132</td>
+  <td class=xl68 align=right>0.040506</td>
+  <td class=xl69 align=right>0.20126</td>
+  <td class=xl66 align=right>0.134176</td>
+  <td class=xl67 align=right>-0.04915</td>
+  <td class=xl67 align=right>-0.10246</td>
+  <td class=xl67 align=right>0.080804</td>
+  <td class=xl67 align=right>0.070807</td>
+  <td class=xl68 align=right>0.006114</td>
+  <td class=xl69 align=right>0.078194</td>
+  <td class=xl66 align=right>0.115824</td>
+  <td class=xl67 align=right>0.18993</td>
+  <td class=xl67 align=right>-0.45983</td>
+  <td class=xl67 align=right>0.373196</td>
+  <td class=xl67 align=right>-0.1033</td>
+  <td class=xl68 align=right>0.099366</td>
+  <td class=xl69 align=right>0.315224</td>
+  <td class=xl69 align=right>0.324777</td>
+ </tr>
+ <![if supportMisalignedColumns]>
+ <tr height=0 style='display:none'>
+  <td width=68 style='width:51pt'></td>
+  <td width=69 style='width:51pt'></td>
+  <td width=69 style='width:51pt'></td>
+  <td width=69 style='width:51pt'></td>
+  <td width=69 style='width:51pt'></td>
+  <td width=69 style='width:51pt'></td>
+  <td width=69 style='width:51pt'></td>
+  <td width=69 style='width:51pt'></td>
+  <td width=69 style='width:51pt'></td>
+  <td width=69 style='width:51pt'></td>
+  <td width=69 style='width:51pt'></td>
+  <td width=69 style='width:51pt'></td>
+  <td width=69 style='width:51pt'></td>
+  <td width=69 style='width:51pt'></td>
+  <td width=69 style='width:51pt'></td>
+  <td width=69 style='width:51pt'></td>
+  <td width=69 style='width:51pt'></td>
+  <td width=69 style='width:51pt'></td>
+  <td width=69 style='width:51pt'></td>
+  <td width=69 style='width:51pt'></td>
+  <td width=69 style='width:51pt'></td>
+  <td width=69 style='width:51pt'></td>
+  <td width=69 style='width:51pt'></td>
+ </tr>
+ <![endif]>
+</table>
+
+</body>
+
+</html>
