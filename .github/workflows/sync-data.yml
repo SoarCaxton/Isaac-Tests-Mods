@@ -3,7 +3,14 @@ name: Sync data folder
 on:
   push:
     branches:
-      - BossDirection   # 当 BossDirection 分支有 push 时触发
+      - BossDirection
+    paths:
+      - 'data/**'                # 当 data 目录有变化时触发
+      - '.github/workflows/**'   # 当 workflow 文件有变化时也触发
+
+
+permissions:
+  contents: write   # 允许写入目标仓库
 
 jobs:
   sync:
@@ -13,7 +20,7 @@ jobs:
       - name: Checkout source repo
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0   # 保留完整历史，避免缺失
+          fetch-depth: 0   # 保留完整历史
 
       - name: Push data folder to target repo
         run: |
@@ -21,7 +28,7 @@ jobs:
           git init
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git remote add target https://github.com/SoarCaxton/Boss-Direction-Statistics.git
+          git remote add target https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/SoarCaxton/Boss-Direction-Statistics.git
           git add .
           git commit -m "Sync data folder from BossDirection branch"
           git push --force target main
