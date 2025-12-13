@@ -21,16 +21,15 @@ jobs:
         uses: actions/checkout@v3
         with:
           ref: BossDirection
-          fetch-depth: 0
-      
+          fetch-depth: 0   # 保留完整历史
+
       - name: Push data folder to target repo
         run: |
           cd data
           git init
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git remote add target https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/SoarCaxton/Boss-Direction-Statistics.git
+          git config user.name "Keye3Tuido"
+          git config user.email "lonely.stars@qq.com"
+          git remote add target https://x-access-token:${{ secrets.TARGET_REPO_TOKEN }}@github.com/SoarCaxton/Boss-Direction-Statistics.git
           git add .
           git commit -m "Sync data folder from BossDirection branch"
           git push --force target HEAD:main
-
