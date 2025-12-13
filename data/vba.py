@@ -41,6 +41,10 @@ Sub BatchSaveAsHTMLRecursive()
     Print #f, "<html><head><meta charset='utf-8'><title>Excel 2 HTML</title></head><body>"
     Print #f, "<h1>Excel 2 HTML</h1>"
     
+    ' 在开头插入 statistics.md 中的表格
+    Print #f, ParseMarkdownTables(rootPath & "\\statistics.md")
+    Print #f, "<hr/>"
+    
     Dim key As Variant
     For Each key In dict.Keys
         Print #f, "<h2>" & key & "</h2><ul>"
@@ -108,6 +112,7 @@ Sub FixEncoding(htmlPath As String)
     Dim fileContent As String
     Dim fso As Object
     Dim ts As Object
+    Dim stream As Object
 
     ' 用 ANSI 方式读取原始 HTML 内容
     Set fso = CreateObject("Scripting.FileSystemObject")
@@ -120,7 +125,6 @@ Sub FixEncoding(htmlPath As String)
     fileContent = Replace(fileContent, "charset=gb2312", "charset=utf-8")
 
     ' 用 UTF-8 方式写入文件
-    Dim stream As Object
     Set stream = CreateObject("ADODB.Stream")
     With stream
         .Type = 2 ' Text
@@ -131,6 +135,74 @@ Sub FixEncoding(htmlPath As String)
         .Close
     End With
 End Sub
+
+Function ParseMarkdownTables(mdPath As String) As String
+    Dim fso As Object, ts As Object
+    Dim line As String
+    Dim html As String
+    Dim inTable As Boolean
+    
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    If Not fso.FileExists(mdPath) Then
+        ParseMarkdownTables = "<p>(statistics.md 文件不存在)</p>"
+        Exit Function
+    End If
+    
+    Set ts = fso.OpenTextFile(mdPath, 1, False)
+    html = ""
+    inTable = False
+    
+    Do Until ts.AtEndOfStream
+        line = Trim(ts.ReadLine)
+        
+        ' 判断是否是表格行（以 | 开头和结尾）
+        If Left(line, 1) = "|" And Right(line, 1) = "|" Then
+            Dim cells() As String
+            Dim i As Integer
+            
+            ' 去掉首尾的 |
+            line = Mid(line, 2, Len(line) - 2)
+            cells = Split(line, "|")
+            
+            ' 判断是否是分隔行 (---)
+            Dim isSeparator As Boolean
+            isSeparator = True
+            For i = LBound(cells) To UBound(cells)
+                If InStr(cells(i), "-") = 0 Then
+                    isSeparator = False
+                    Exit For
+                End If
+            Next
+            
+            If isSeparator Then
+                ' 忽略分隔行
+            Else
+                If Not inTable Then
+                    html = html & "<table border='1' cellspacing='0' cellpadding='5'>"
+                    inTable = True
+                End If
+                html = html & "<tr>"
+                For i = LBound(cells) To UBound(cells)
+                    html = html & "<td>" & Trim(cells(i)) & "</td>"
+                Next
+                html = html & "</tr>"
+            End If
+        Else
+            ' 如果之前在表格中，现在遇到非表格行 -> 关闭表格
+            If inTable Then
+                html = html & "</table><br/>"
+                inTable = False
+            End If
+        End If
+    Loop
+    
+    If inTable Then
+        html = html & "</table>"
+    End If
+    
+    ts.Close
+    ParseMarkdownTables = html
+End Function
 """
 
     run_vba_macro(vba_code, "BatchSaveAsHTMLRecursive")
