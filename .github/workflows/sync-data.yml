@@ -20,8 +20,9 @@ jobs:
       - name: Checkout source repo
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0   # 保留完整历史
-
+          ref: BossDirection
+          fetch-depth: 0
+      
       - name: Push data folder to target repo
         run: |
           cd data
@@ -31,4 +32,5 @@ jobs:
           git remote add target https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/SoarCaxton/Boss-Direction-Statistics.git
           git add .
           git commit -m "Sync data folder from BossDirection branch"
-          git push --force target BossDirection:main
+          git push --force target HEAD:main
+
