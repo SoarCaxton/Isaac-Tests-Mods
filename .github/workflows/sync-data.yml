@@ -31,4 +31,5 @@ jobs:
           git remote add target https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/SoarCaxton/Boss-Direction-Statistics.git
           git add .
           git commit -m "Sync data folder from BossDirection branch"
-          git push --force target main
+          git push https://github.com/SoarCaxton/Boss-Direction-Statistics.git BossDirection:main
+
