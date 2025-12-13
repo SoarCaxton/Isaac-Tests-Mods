@@ -1,0 +1,864 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+xmlns:x="urn:schemas-microsoft-com:office:excel"
+xmlns="http://www.w3.org/TR/REC-html40">
+
+<head>
+<meta http-equiv=Content-Type content="text/html; charset=utf-8">
+<meta name=ProgId content=Excel.Sheet>
+<meta name=Generator content="Microsoft Excel 15">
+<link id=Main-File rel=Main-File href="../r+_BDIXL2_3.19w.html">
+<link rel=File-List href=filelist.xml>
+<link rel=Stylesheet href=stylesheet.css>
+<style>
+<!--table
+	{mso-displayed-decimal-separator:"\.";
+	mso-displayed-thousand-separator:"\,";}
+@page
+	{margin:.75in .7in .75in .7in;
+	mso-header-margin:.3in;
+	mso-footer-margin:.3in;}
+ruby
+	{ruby-align:left;}
+rt
+	{color:windowtext;
+	font-size:9.0pt;
+	font-weight:400;
+	font-style:normal;
+	text-decoration:none;
+	font-family:宋体;
+	mso-generic-font-family:auto;
+	mso-font-charset:134;
+	mso-char-type:none;
+	display:none;}
+-->
+</style>
+<![if !supportTabStrip]><script language="JavaScript">
+<!--
+function fnUpdateTabs()
+ {
+  if (parent.window.g_iIEVer>=4) {
+   if (parent.document.readyState=="complete"
+    && parent.frames['frTabs'].document.readyState=="complete")
+   parent.fnSetActiveSheet(7);
+  else
+   window.setTimeout("fnUpdateTabs();",150);
+ }
+}
+
+if (window.name!="frSheet")
+ window.location.replace("../r+_BDIXL2_3.19w.html");
+else
+ fnUpdateTabs();
+//-->
+</script>
+<![endif]>
+</head>
+
+<body link=blue vlink=purple>
+
+<table border=0 cellpadding=0 cellspacing=0 width=636 style='border-collapse:
+ collapse;table-layout:fixed;width:476pt'>
+ <col width=111 style='mso-width-source:userset;mso-width-alt:3771;width:83pt'>
+ <col width=141 style='mso-width-source:userset;mso-width-alt:4795;width:105pt'>
+ <col width=96 span=4 style='mso-width-source:userset;mso-width-alt:3259;
+ width:72pt'>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+  <td colspan=6 rowspan=54 height=1296 class=xl71 width=636 style='height:972.0pt;
+  width:476pt'>计算说明（本节列出脚本中用于计算与检验的公式与步骤，便于复现）：<br>
+    <br>
+    1) 概率估计<br>
+    <span style='mso-spacerun:yes'>   </span>- 观测计数 A_i 为某类别的观测次数，总试验次数为
+  N（或在两类比较中为 m = A + B）。<br>
+    <span style='mso-spacerun:yes'>   </span>- 类别的估计概率： p_hat = A / N
+  （若只比较两类，则条件概率 p_hat = A / m）。<br>
+    <br>
+    2) Wilson 置信区间（用于单个类别概率的置信区间，双侧）<br>
+    <span style='mso-spacerun:yes'>   </span>- 给定显著性水平 alpha（双侧），先计算 z =
+  Phi^{-1}(1 - alpha/2)。<br>
+    <span style='mso-spacerun:yes'>   </span>- 设 p_hat = A / N，<br>
+    <span style='mso-spacerun:yes'>     </span>denom = 1 + z^2 / N<br>
+    <span style='mso-spacerun:yes'>     </span>center = p_hat + z^2 /
+  (2N)<br>
+    <span style='mso-spacerun:yes'>     </span>rad = z * sqrt(
+  p_hat*(1-p_hat)/N + z^2/(4N^2) )<br>
+    <span style='mso-spacerun:yes'>     </span>下界 lower = (center - rad) /
+  denom<br>
+    <span style='mso-spacerun:yes'>     </span>上界 upper = (center + rad) /
+  denom<br>
+    <span style='mso-spacerun:yes'>   </span>- 区间被截断到 [0,1]。<br>
+    <br>
+    3) 两类显著性比较（用于判断 A &gt; B）<br>
+    <span style='mso-spacerun:yes'>   </span>- 只看落在 A 或 B 的样本，令 m = A +
+  B。<br>
+    <span style='mso-spacerun:yes'>   </span>- 在原假设 H0: p_A = p_B（条件下 p =
+  0.5）下，A ~ Binomial(m, 0.5)。<br>
+    <span style='mso-spacerun:yes'>   </span>- 使用精确二项检验（binomtest）做单侧检验：H1: p_A
+  &gt; 0.5（即 A 的条件概率大于 B）。<br>
+    <span style='mso-spacerun:yes'>   </span>- 得到单侧 p_value（脚本中称为原始
+  p_value）。<br>
+    <br>
+    4) 多重比较校正（组内 Bonferroni）<br>
+    <span style='mso-spacerun:yes'>   </span>- 在同一组（例如门组或某方向子组）内做所有两两比较，若组内共有 T
+  个两两比较，<br>
+    <span style='mso-spacerun:yes'>     </span>则每次检验的显著性阈值设为 alpha_per_test =
+  overall_alpha / T（overall_alpha 默认为 0.05）。<br>
+    <span style='mso-spacerun:yes'>   </span>- 仅当单侧 p_value &lt;=
+  alpha_per_test 时，记录显著结论 A&gt;B（或 B&gt;A）。<br>
+    <br>
+    5) 差值与效应量（使用总样本 N 作为分母）<br>
+    <span style='mso-spacerun:yes'>   </span>- 在两类比较中，差值定义为：<br>
+    <span style='mso-spacerun:yes'>       </span>diff_total = (A/N) - (B/N)，其中
+  N 为总样本量。<br>
+    <span style='mso-spacerun:yes'>   </span>- 这样差值直接反映在总样本中的概率差异，便于与“误差 ≤1%（按
+  N 分母）”规则对齐。<br>
+    <span style='mso-spacerun:yes'>   </span>- 在结论页中，差值单元格按以下规则着色：<br>
+    <span style='mso-spacerun:yes'>       </span>&lt;1% → 灰色；1%~2% → 黄色；≥2% →
+  绿色。<br>
+    <br>
+    6) 方向比较限制（脚本实现细节）<br>
+    <span style='mso-spacerun:yes'>   </span>- 方向分为两组：直角组 = {Left, Up, Right,
+  Down}；斜角组 = {Up-Left, Up-Right, Down-Right, Down-Left}。<br>
+    <span style='mso-spacerun:yes'>   </span>- 仅在组内做两两比较，不跨组比较。<br>
+    <br>
+    7) 概率统计表（概率统计页）<br>
+    <span style='mso-spacerun:yes'>   </span>- 每个类别的概率由原始计数除以 Total 得到：Door_X =
+  Door_X_count / Total；Dir_Y = Dir_Y_count / Total。<br>
+    <br>
+    8) 均值/方差/标准差（均值偏差页）<br>
+    <span style='mso-spacerun:yes'>   </span>- 组内均值（例如门组）: mean = mean(p_i)（忽略为
+  0 的项以避免 Total=0 的影响）。<br>
+    <span style='mso-spacerun:yes'>   </span>- 以百分比形式计算偏差列： (p_i - mean) *
+  100。<br>
+    <span style='mso-spacerun:yes'>   </span>-
+  方差（%^2）使用样本方差（ddof=0），标准差为方差的平方根（%）。<br>
+    <br>
+    本页（结论-方向）说明：<br>
+    <span style='mso-spacerun:yes'> </span>- 方向被分为两组：直角组（4 个）与斜角组（4
+  个），每组内分别做两两比较。<br>
+    <span style='mso-spacerun:yes'> </span>- 每组内比较数量均为 T = C(4,2) = 6，组内
+  Bonferroni 校正 alpha_per_test = 0.05 / 6。<br>
+    <span style='mso-spacerun:yes'> </span>- 仅在组内记录显著结论，格式同上： 实验编号 | 结论 |
+  p_value | A_count | B_count | 差值(pA-pB, N分母)。<br>
+    </td>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=24 style='mso-height-source:userset;height:18.0pt'>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 class=xl70 style='height:13.5pt'>实验编号</td>
+  <td class=xl70>结论</td>
+  <td class=xl70>p_value</td>
+  <td class=xl70>A_count</td>
+  <td class=xl70>B_count</td>
+  <td class=xl70>差值(pA-pB, <span style='display:none'>N分母)</span></td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>1c</td>
+  <td>Left&gt;Down</td>
+  <td align=right>4.40481E-08</td>
+  <td align=right>3701</td>
+  <td align=right>3254</td>
+  <td align=right style='background:#FFD966;mso-pattern:black none'>0.013981</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>1c</td>
+  <td>Up&gt;Down</td>
+  <td align=right>9.09829E-05</td>
+  <td align=right>3564</td>
+  <td align=right>3254</td>
+  <td align=right style='background:#D9D9D9;mso-pattern:black none'>0.009696</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>1c</td>
+  <td>Right&gt;Down</td>
+  <td align=right>0.000217803</td>
+  <td align=right>3545</td>
+  <td align=right>3254</td>
+  <td align=right style='background:#D9D9D9;mso-pattern:black none'>0.009101</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>1c</td>
+  <td>Up-Left&gt;Down-Right</td>
+  <td align=right>5.02469E-07</td>
+  <td align=right>4735</td>
+  <td align=right>4270</td>
+  <td align=right style='background:#FFD966;mso-pattern:black none'>0.014544</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>1c</td>
+  <td>Up-Left&gt;Down-Left</td>
+  <td align=right>1.26739E-05</td>
+  <td align=right>4735</td>
+  <td align=right>4333</td>
+  <td align=right style='background:#FFD966;mso-pattern:black none'>0.012573</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>1c</td>
+  <td>Up-Right&gt;Down-Righ<span style='display:none'>t</span></td>
+  <td align=right>0.000709243</td>
+  <td align=right>4571</td>
+  <td align=right>4270</td>
+  <td align=right style='background:#D9D9D9;mso-pattern:black none'>0.009414</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>1c</td>
+  <td>Up-Right&gt;Down-Left</td>
+  <td align=right>0.006006615</td>
+  <td align=right>4571</td>
+  <td align=right>4333</td>
+  <td align=right style='background:#D9D9D9;mso-pattern:black none'>0.007444</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>1d</td>
+  <td>Left&gt;Down</td>
+  <td align=right>7.57377E-05</td>
+  <td align=right>3638</td>
+  <td align=right>3321</td>
+  <td align=right style='background:#D9D9D9;mso-pattern:black none'>0.009915</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>1d</td>
+  <td>Up&gt;Down</td>
+  <td align=right>0.002866544</td>
+  <td align=right>3551</td>
+  <td align=right>3321</td>
+  <td align=right style='background:#D9D9D9;mso-pattern:black none'>0.007194</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>1d</td>
+  <td>Right&gt;Down</td>
+  <td align=right>0.000335759</td>
+  <td align=right>3605</td>
+  <td align=right>3321</td>
+  <td align=right style='background:#D9D9D9;mso-pattern:black none'>0.008882</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>1d</td>
+  <td>Up-Left&gt;Down-Right</td>
+  <td align=right>1.25007E-06</td>
+  <td align=right>4671</td>
+  <td align=right>4226</td>
+  <td align=right style='background:#FFD966;mso-pattern:black none'>0.013918</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>1d</td>
+  <td>Up-Left&gt;Down-Left</td>
+  <td align=right>0.000531928</td>
+  <td align=right>4671</td>
+  <td align=right>4359</td>
+  <td align=right style='background:#D9D9D9;mso-pattern:black none'>0.009758</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>1d</td>
+  <td>Up-Right&gt;Down-Righ<span style='display:none'>t</span></td>
+  <td align=right>3.27963E-05</td>
+  <td align=right>4602</td>
+  <td align=right>4226</td>
+  <td align=right style='background:#FFD966;mso-pattern:black none'>0.01176</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>1d</td>
+  <td>Up-Right&gt;Down-Left</td>
+  <td align=right>0.005285329</td>
+  <td align=right>4602</td>
+  <td align=right>4359</td>
+  <td align=right style='background:#D9D9D9;mso-pattern:black none'>0.0076</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>3</td>
+  <td>Up-Left&gt;Down-Left</td>
+  <td align=right>0.002301175</td>
+  <td align=right>3955</td>
+  <td align=right>3706</td>
+  <td align=right style='background:#D9D9D9;mso-pattern:black none'>0.007788</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>3</td>
+  <td>Up-Right&gt;Down-Left</td>
+  <td align=right>0.004855802</td>
+  <td align=right>3933</td>
+  <td align=right>3706</td>
+  <td align=right style='background:#D9D9D9;mso-pattern:black none'>0.0071</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>3c</td>
+  <td>Up&gt;Left</td>
+  <td align=right>1.02373E-78</td>
+  <td align=right>4901</td>
+  <td align=right>3217</td>
+  <td align=right style='background:#A9D08E;mso-pattern:black none'>0.052669</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>3c</td>
+  <td>Down&gt;Left</td>
+  <td align=right>2.08545E-08</td>
+  <td align=right>3673</td>
+  <td align=right>3217</td>
+  <td align=right style='background:#FFD966;mso-pattern:black none'>0.014262</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>3c</td>
+  <td>Up&gt;Right</td>
+  <td align=right>8.24969E-89</td>
+  <td align=right>4901</td>
+  <td align=right>3121</td>
+  <td align=right style='background:#A9D08E;mso-pattern:black none'>0.055672</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>3c</td>
+  <td>Up&gt;Down</td>
+  <td align=right>1.64289E-40</td>
+  <td align=right>4901</td>
+  <td align=right>3673</td>
+  <td align=right style='background:#A9D08E;mso-pattern:black none'>0.038407</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>3c</td>
+  <td>Down&gt;Right</td>
+  <td align=right>1.12814E-11</td>
+  <td align=right>3673</td>
+  <td align=right>3121</td>
+  <td align=right style='background:#FFD966;mso-pattern:black none'>0.017265</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>3c</td>
+  <td>Up-Left&gt;Down-Right</td>
+  <td align=right>1.5751E-135</td>
+  <td align=right>5414</td>
+  <td align=right>3138</td>
+  <td align=right style='background:#A9D08E;mso-pattern:black none'>0.071185</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>3c</td>
+  <td>Up-Left&gt;Down-Left</td>
+  <td align=right>2.2133E-122</td>
+  <td align=right>5414</td>
+  <td align=right>3239</td>
+  <td align=right style='background:#A9D08E;mso-pattern:black none'>0.068026</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>3c</td>
+  <td>Up-Right&gt;Down-Righ<span style='display:none'>t</span></td>
+  <td align=right>4.6091E-121</td>
+  <td align=right>5270</td>
+  <td align=right>3138</td>
+  <td align=right style='background:#A9D08E;mso-pattern:black none'>0.066681</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>3c</td>
+  <td>Up-Right&gt;Down-Left</td>
+  <td align=right>1.1811E-108</td>
+  <td align=right>5270</td>
+  <td align=right>3239</td>
+  <td align=right style='background:#A9D08E;mso-pattern:black none'>0.063522</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>3d</td>
+  <td>Left&gt;Down</td>
+  <td align=right>0.000113254</td>
+  <td align=right>3903</td>
+  <td align=right>3583</td>
+  <td align=right style='background:#FFD966;mso-pattern:black none'>0.010008</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>3d</td>
+  <td>Up&gt;Down</td>
+  <td align=right>0.001138813</td>
+  <td align=right>3847</td>
+  <td align=right>3583</td>
+  <td align=right style='background:#D9D9D9;mso-pattern:black none'>0.008257</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>3d</td>
+  <td>Right&gt;Down</td>
+  <td align=right>2.12086E-05</td>
+  <td align=right>3939</td>
+  <td align=right>3583</td>
+  <td align=right style='background:#FFD966;mso-pattern:black none'>0.011134</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>3d</td>
+  <td>Up-Left&gt;Down-Right</td>
+  <td align=right>3.18647E-21</td>
+  <td align=right>4617</td>
+  <td align=right>3758</td>
+  <td align=right style='background:#A9D08E;mso-pattern:black none'>0.026866</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>3d</td>
+  <td>Up-Left&gt;Down-Left</td>
+  <td align=right>1.86108E-17</td>
+  <td align=right>4617</td>
+  <td align=right>3842</td>
+  <td align=right style='background:#A9D08E;mso-pattern:black none'>0.024239</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>3d</td>
+  <td>Up-Right&gt;Down-Righ<span style='display:none'>t</span></td>
+  <td align=right>6.69553E-16</td>
+  <td align=right>4484</td>
+  <td align=right>3758</td>
+  <td align=right style='background:#A9D08E;mso-pattern:black none'>0.022707</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>3d</td>
+  <td>Up-Right&gt;Down-Left</td>
+  <td align=right>1.04531E-12</td>
+  <td align=right>4484</td>
+  <td align=right>3842</td>
+  <td align=right style='background:#A9D08E;mso-pattern:black none'>0.020079</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>5</td>
+  <td>Up&gt;Left</td>
+  <td align=right>6.07866E-31</td>
+  <td align=right>4844</td>
+  <td align=right>3776</td>
+  <td align=right style='background:#A9D08E;mso-pattern:black none'>0.033403</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>5</td>
+  <td>Down&gt;Left</td>
+  <td align=right>5.02706E-11</td>
+  <td align=right>4360</td>
+  <td align=right>3776</td>
+  <td align=right style='background:#FFD966;mso-pattern:black none'>0.018265</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>5</td>
+  <td>Up&gt;Right</td>
+  <td align=right>5.01902E-30</td>
+  <td align=right>4844</td>
+  <td align=right>3792</td>
+  <td align=right style='background:#A9D08E;mso-pattern:black none'>0.032903</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>5</td>
+  <td>Up&gt;Down</td>
+  <td align=right>2.38128E-07</td>
+  <td align=right>4844</td>
+  <td align=right>4360</td>
+  <td align=right style='background:#FFD966;mso-pattern:black none'>0.015138</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>5</td>
+  <td>Down&gt;Right</td>
+  <td align=right>1.6675E-10</td>
+  <td align=right>4360</td>
+  <td align=right>3792</td>
+  <td align=right style='background:#FFD966;mso-pattern:black none'>0.017765</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>5</td>
+  <td>Up-Left&gt;Down-Right</td>
+  <td align=right>1.14607E-14</td>
+  <td align=right>4109</td>
+  <td align=right>3445</td>
+  <td align=right style='background:#A9D08E;mso-pattern:black none'>0.020768</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>5</td>
+  <td>Up-Left&gt;Down-Left</td>
+  <td align=right>7.7837E-13</td>
+  <td align=right>4109</td>
+  <td align=right>3492</td>
+  <td align=right style='background:#FFD966;mso-pattern:black none'>0.019298</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>5</td>
+  <td>Up-Right&gt;Down-Righ<span style='display:none'>t</span></td>
+  <td align=right>1.99912E-16</td>
+  <td align=right>4155</td>
+  <td align=right>3445</td>
+  <td align=right style='background:#A9D08E;mso-pattern:black none'>0.022206</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>5</td>
+  <td>Up-Right&gt;Down-Left</td>
+  <td align=right>1.79638E-14</td>
+  <td align=right>4155</td>
+  <td align=right>3492</td>
+  <td align=right style='background:#A9D08E;mso-pattern:black none'>0.020736</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>5a</td>
+  <td>Up&gt;Left</td>
+  <td align=right>8.86441E-11</td>
+  <td align=right>4590</td>
+  <td align=right>3998</td>
+  <td align=right style='background:#FFD966;mso-pattern:black none'>0.018516</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>5a</td>
+  <td>Down&gt;Left</td>
+  <td align=right>0.007165285</td>
+  <td align=right>4221</td>
+  <td align=right>3998</td>
+  <td align=right style='background:#D9D9D9;mso-pattern:black none'>0.006975</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>5a</td>
+  <td>Up&gt;Right</td>
+  <td align=right>3.00743E-10</td>
+  <td align=right>4590</td>
+  <td align=right>4015</td>
+  <td align=right style='background:#FFD966;mso-pattern:black none'>0.017984</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>5a</td>
+  <td>Up&gt;Down</td>
+  <td align=right>4.40954E-05</td>
+  <td align=right>4590</td>
+  <td align=right>4221</td>
+  <td align=right style='background:#FFD966;mso-pattern:black none'>0.011541</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>5a</td>
+  <td>Up-Left&gt;Down-Right</td>
+  <td align=right>1.28925E-08</td>
+  <td align=right>3991</td>
+  <td align=right>3508</td>
+  <td align=right style='background:#FFD966;mso-pattern:black none'>0.015106</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>5a</td>
+  <td>Up-Left&gt;Down-Left</td>
+  <td align=right>7.65474E-06</td>
+  <td align=right>3991</td>
+  <td align=right>3613</td>
+  <td align=right style='background:#FFD966;mso-pattern:black none'>0.011822</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>5a</td>
+  <td>Up-Right&gt;Down-Righ<span style='display:none'>t</span></td>
+  <td align=right>5.97072E-10</td>
+  <td align=right>4037</td>
+  <td align=right>3508</td>
+  <td align=right style='background:#FFD966;mso-pattern:black none'>0.016545</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>5a</td>
+  <td>Up-Right&gt;Down-Left</td>
+  <td align=right>6.57607E-07</td>
+  <td align=right>4037</td>
+  <td align=right>3613</td>
+  <td align=right style='background:#FFD966;mso-pattern:black none'>0.013261</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>5b</td>
+  <td>Up&gt;Left</td>
+  <td align=right>1.1131E-35</td>
+  <td align=right>4864</td>
+  <td align=right>3715</td>
+  <td align=right style='background:#A9D08E;mso-pattern:black none'>0.035937</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>5b</td>
+  <td>Down&gt;Left</td>
+  <td align=right>4.72639E-13</td>
+  <td align=right>4357</td>
+  <td align=right>3715</td>
+  <td align=right style='background:#A9D08E;mso-pattern:black none'>0.020079</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>5b</td>
+  <td>Up&gt;Right</td>
+  <td align=right>4.3363E-32</td>
+  <td align=right>4864</td>
+  <td align=right>3774</td>
+  <td align=right style='background:#A9D08E;mso-pattern:black none'>0.034091</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>5b</td>
+  <td>Up&gt;Down</td>
+  <td align=right>6.79596E-08</td>
+  <td align=right>4864</td>
+  <td align=right>4357</td>
+  <td align=right style='background:#FFD966;mso-pattern:black none'>0.015857</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>5b</td>
+  <td>Down&gt;Right</td>
+  <td align=right>5.33917E-11</td>
+  <td align=right>4357</td>
+  <td align=right>3774</td>
+  <td align=right style='background:#FFD966;mso-pattern:black none'>0.018234</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>5b</td>
+  <td>Up-Left&gt;Down-Right</td>
+  <td align=right>7.26616E-13</td>
+  <td align=right>4086</td>
+  <td align=right>3470</td>
+  <td align=right style='background:#FFD966;mso-pattern:black none'>0.019266</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>5b</td>
+  <td>Up-Left&gt;Down-Left</td>
+  <td align=right>2.68511E-10</td>
+  <td align=right>4086</td>
+  <td align=right>3543</td>
+  <td align=right style='background:#FFD966;mso-pattern:black none'>0.016983</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>5b</td>
+  <td>Up-Right&gt;Down-Righ<span style='display:none'>t</span></td>
+  <td align=right>1.03641E-15</td>
+  <td align=right>4164</td>
+  <td align=right>3470</td>
+  <td align=right style='background:#A9D08E;mso-pattern:black none'>0.021706</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>5b</td>
+  <td>Up-Right&gt;Down-Left</td>
+  <td align=right>7.96815E-13</td>
+  <td align=right>4164</td>
+  <td align=right>3543</td>
+  <td align=right style='background:#FFD966;mso-pattern:black none'>0.019423</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>5c</td>
+  <td>Up&gt;Left</td>
+  <td align=right>0.004314651</td>
+  <td align=right>4367</td>
+  <td align=right>4124</td>
+  <td align=right style='background:#D9D9D9;mso-pattern:black none'>0.0076</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>7</td>
+  <td>Up&gt;Left</td>
+  <td align=right>7.48279E-10</td>
+  <td align=right>4496</td>
+  <td align=right>3940</td>
+  <td align=right style='background:#FFD966;mso-pattern:black none'>0.01739</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>7</td>
+  <td>Down&gt;Left</td>
+  <td align=right>8.2333E-07</td>
+  <td align=right>4378</td>
+  <td align=right>3940</td>
+  <td align=right style='background:#FFD966;mso-pattern:black none'>0.013699</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>7</td>
+  <td>Up&gt;Right</td>
+  <td align=right>2.82383E-11</td>
+  <td align=right>4496</td>
+  <td align=right>3895</td>
+  <td align=right style='background:#FFD966;mso-pattern:black none'>0.018797</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>7</td>
+  <td>Down&gt;Right</td>
+  <td align=right>5.76763E-08</td>
+  <td align=right>4378</td>
+  <td align=right>3895</td>
+  <td align=right style='background:#FFD966;mso-pattern:black none'>0.015106</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>7</td>
+  <td>Up-Left&gt;Up-Right</td>
+  <td align=right>0.000387145</td>
+  <td align=right>4133</td>
+  <td align=right>3832</td>
+  <td align=right style='background:#D9D9D9;mso-pattern:black none'>0.009414</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>7</td>
+  <td>Up-Left&gt;Down-Right</td>
+  <td align=right>2.72938E-10</td>
+  <td align=right>4133</td>
+  <td align=right>3587</td>
+  <td align=right style='background:#FFD966;mso-pattern:black none'>0.017077</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>7</td>
+  <td>Up-Left&gt;Down-Left</td>
+  <td align=right>1.05294E-06</td>
+  <td align=right>4133</td>
+  <td align=right>3712</td>
+  <td align=right style='background:#FFD966;mso-pattern:black none'>0.013167</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>7</td>
+  <td>Up-Right&gt;Down-Righ<span style='display:none'>t</span></td>
+  <td align=right>0.002305441</td>
+  <td align=right>3832</td>
+  <td align=right>3587</td>
+  <td align=right style='background:#D9D9D9;mso-pattern:black none'>0.007663</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>7b</td>
+  <td>Up&gt;Left</td>
+  <td align=right>4.33768E-05</td>
+  <td align=right>4412</td>
+  <td align=right>4050</td>
+  <td align=right style='background:#FFD966;mso-pattern:black none'>0.011322</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>7b</td>
+  <td>Down&gt;Left</td>
+  <td align=right>0.000473969</td>
+  <td align=right>4354</td>
+  <td align=right>4050</td>
+  <td align=right style='background:#D9D9D9;mso-pattern:black none'>0.009508</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>7b</td>
+  <td>Up&gt;Right</td>
+  <td align=right>1.02774E-05</td>
+  <td align=right>4412</td>
+  <td align=right>4020</td>
+  <td align=right style='background:#FFD966;mso-pattern:black none'>0.01226</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>7b</td>
+  <td>Down&gt;Right</td>
+  <td align=right>0.000136633</td>
+  <td align=right>4354</td>
+  <td align=right>4020</td>
+  <td align=right style='background:#FFD966;mso-pattern:black none'>0.010446</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>7b</td>
+  <td>Up-Left&gt;Up-Right</td>
+  <td align=right>0.007636404</td>
+  <td align=right>3999</td>
+  <td align=right>3784</td>
+  <td align=right style='background:#D9D9D9;mso-pattern:black none'>0.006724</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>7b</td>
+  <td>Up-Left&gt;Down-Right</td>
+  <td align=right>4.81266E-06</td>
+  <td align=right>3999</td>
+  <td align=right>3612</td>
+  <td align=right style='background:#FFD966;mso-pattern:black none'>0.012104</td>
+ </tr>
+ <tr height=18 style='height:13.5pt'>
+  <td height=18 style='height:13.5pt'>7b</td>
+  <td>Up-Left&gt;Down-Left</td>
+  <td align=right>0.001807789</td>
+  <td align=right>3999</td>
+  <td align=right>3742</td>
+  <td align=right style='background:#D9D9D9;mso-pattern:black none'>0.008038</td>
+ </tr>
+ <![if supportMisalignedColumns]>
+ <tr height=0 style='display:none'>
+  <td width=111 style='width:83pt'></td>
+  <td width=141 style='width:105pt'></td>
+  <td width=96 style='width:72pt'></td>
+  <td width=96 style='width:72pt'></td>
+  <td width=96 style='width:72pt'></td>
+  <td width=96 style='width:72pt'></td>
+ </tr>
+ <![endif]>
+</table>
+
+</body>
+
+</html>
