@@ -78,6 +78,7 @@ Sub ProcessFolder(f As Object, rootPath As String, dict As Object)
         If LCase(Right(file.Name, 5)) = ".xlsx" Then
             If Left(file.Name, 2) <> "~$" Then
                 Set wb = Workbooks.Open(file.Path)
+                Application.DefaultWebOptions.Encoding = msoEncodingUTF8
                 wb.SaveAs Replace(file.Path, ".xlsx", ".html"), FileFormat:=44
                 wb.Close SaveChanges:=False
                 relPath = Replace(file.Path, rootPath & "\\", "")
